@@ -1,0 +1,14 @@
+mover personagem 1
+w - cima
+a - esquerda
+s - baixo
+d - direita
+i - soltar bomba
+
+mover personagem 2
+o - cima
+l - baixo
+k - esquerda
+ç- direita
+i - soltar bomba
+
