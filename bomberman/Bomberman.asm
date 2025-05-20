@@ -29,14 +29,24 @@ posAntRosa: var #1      ; Contem a posicao anterior da Rosa
 
 ; e assim como o jogador - instanciamos cada bloco ou caixa para modificá-los aqui
 
+; caixaS para efeitos -> explodir ou apenas passar por cima e ter efeito?
+
 ; se caixa: caso a bomba exploda 
-;   -> e caixa estiver numa regiao proxima e jogador NAO atingido (proximo) -> caixa tem chance randomica (numeros, exemplo: se par entao sorteia dnv pra ver qual item) 
+;   -> e caixaS estiver numa regiao proxima e jogador NAO atingido (proximo) -> caixaS tem chance randomica (numeros, exemplo: se par entao sorteia dnv pra ver qual item) 
 ;       (se impar, nao faz nada)
 ;             faz o item aparecer no lugar onde foi explodida a caixa;
 ;   
 ;   -> (jogador atingido) 
 ;     -> jogador de OUTRO numero sai como vitorioso apos um delay; conta apenas o primeiro que morrer; flagzinha pra isso
 
+
+; caso tecla R  -> jogador 1 bomba 
+; caso tecla I  -> jogador 2 bomba
+
+; bomba -> explosao em + -> se caixa estiver em +, explode normal
+; bomba -> se caixaS -> explode normal, chance de item
+
+; bomba alteracoes: caso colocamos efeitos especiais
 
 ;********************************************************
 ;                       MENU
