@@ -14,21 +14,427 @@ MsgOpcao2: string "2 - SAIR"
 OpInicio: var #1 ; guarda a escolha do jogador
 
 
-;; tecla == 'n'
-    ;call DigLetra
-	;loadn r0, #'n'
-	;load r1, Letra
-	;cmp r0, r1
-;
-    ;; tecla == 's'
-    ;loadn r0, #'s'
-	;cmp r0, r1
+posAZUL: var #1         ; Contem a posicao atual do Azul - inicial = 1043
+posAntAzul: var #1      ; Contem a posicao anterior do Azul
+
+posROSA: var #1         ; Contem a posicao atual da Rosa - inicial = 156
+posAntRosa: var #1      ; Contem a posicao anterior da Rosa
+
+
+; Memoria de Cenario necessaria - criar um vetor com todas as info da tela atual - deve ter de modificacao - caso a bomba seja explodida
+; todos os blocos sao intransponiveis
+
+; como faz a colisao de qualquer coisa no mapa? - verifica onde o player esta: posicao do player e onde ele vai casos:
+; : se onde o player esta agora, tiver disparo da tecla de (onde o esta o bloco) - deny - nao faça nada
+
+; e assim como o jogador - instanciamos cada bloco ou caixa para modificá-los aqui
+
+; se caixa: caso a bomba exploda 
+;   -> e caixa estiver numa regiao proxima e jogador NAO atingido (proximo) -> caixa tem chance randomica (numeros, exemplo: se par entao sorteia dnv pra ver qual item) 
+;       (se impar, nao faz nada)
+;             faz o item aparecer no lugar onde foi explodida a caixa;
+;   
+;   -> (jogador atingido) 
+;     -> jogador de OUTRO numero sai como vitorioso apos um delay; conta apenas o primeiro que morrer; flagzinha pra isso
+
+
+;********************************************************
+;                       MENU
+;********************************************************
+
+menu:
+    call ApagaTela
+
+    call printefeitoScreen
+
+    ; Exibir titulo
+    loadn r0, #526 ; posicao na tela
+    loadn r1, #MsgTitulo
+    loadn r2, #0
+    call ImprimeStr
+
+    ; Exibir Opcao 1
+    loadn r0, #605 ; posicao na tela
+    loadn r1, #MsgOpcao1
+    loadn r2, #0
+    call ImprimeStr
+
+    ; Exibir Opcao 2
+    loadn r0, #605 ; posicao na tela
+    loadn r1, #MsgOpcao2
+    loadn r2, #0
+    call ImprimeStr
+
+    ; provavel ter que fazer o numero virar char!!!
+    inchar r1
+    store r1, OpInicio
+
+    ; Verifica opcao
+    loadn r2, #'1'
+    cmp r1, r2
+    je Jogar 
+
+    loadn r2, #'2'
+    cmp r1, r2
+    je Sair 
+
+    ; Se invalido, volta ao menu
+
+    jmp menu
+
+;------------------------
+	
+;********************************************************
+;                       JOGAR - MAIN
+;********************************************************
+Jogar:
+    
+    call ApagaTela
+    loadn R1, #tela1Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    loadn R2, #1536             ; cor branca!
+    call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+    
+    loadn R1, #tela2Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    loadn R2, #512              ; cor branca!
+    call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+    
+    loadn R1, #tela3Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    loadn R2, #2816             ; cor branca!
+    call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+    loadn R1, #tela4Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    loadn R2, #256              ; cor branca!
+    call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+    Loadn R0, #0            
+    store posNave, R0       ; Zera Posicao Atual da Nave
+    store posAntNave, R0    ; Zera Posicao Anterior da Nave
+    
+    store FlagTiro, R0      ; Zera o Flag para marcar que ainda nao Atirou!
+    store posTiro, R0       ; Zera Posicao Atual do Tiro
+    store posAntTiro, R0    ; Zera Posicao Anterior do Tiro
+    
+    Loadn R0, #240
+    store posAlien, R0      ; Zera Posicao Atual do Alien
+    store posAntAlien, R0   ; Zera Posicao Anterior do Alien
+    
+    Loadn R0, #0            ; Contador para os Mods = 0
+    loadn R2, #0            ; Para verificar se (mod(c/10)==0
+    Loop:
+    
+        loadn R1, #10
+        mod R1, R0, R1
+        cmp R1, R2      ; if (mod(c/10)==0
+        ceq MoveNave    ; Chama Rotina de movimentacao da Nave
+    
+        loadn R1, #30
+        mod R1, R0, R1
+        cmp R1, R2      ; if (mod(c/30)==0
+        ceq MoveAlien   ; Chama Rotina de movimentacao do Alien
+    
+        loadn R1, #2
+        mod R1, R0, R1
+        cmp R1, R2      ; if (mod(c/2)==0
+        ceq MoveTiro    ; Chama Rotina de movimentacao do Tiro
+    
+        call Delay
+        inc R0  ;c++
+        jmp Loop
 
 
 
-; copiar loop
+;------------------------
 
-; copiar movimentação e suas funções
+;********************************************************
+;             FUNÇÕES AUXILIARES DE MOVIMENTO
+;********************************************************
+
+MoveNave:
+    push r0
+    push r1
+    
+    call MoveNave_RecalculaPos      ; Recalcula Posicao da Nave
+
+; So' Apaga e Redesenha se (pos != posAnt)
+;   If (posNave != posAntNave)  {   
+    load r0, posNave
+    load r1, posAntNave
+    cmp r0, r1
+    jeq MoveNave_Skip
+        call MoveNave_Apaga
+        call MoveNave_Desenha       ;}
+  MoveNave_Skip:
+    
+    pop r1
+    pop r0
+    rts
+
+;--------------------------------
+    
+MoveNave_Apaga:     ; Apaga a Nave preservando o Cenario!
+    push R0
+    push R1
+    push R2
+    push R3
+    push R4
+    push R5
+
+    load R0, posAntNave ; R0 = posAnt
+    
+    ; --> R2 = Tela1Linha0 + posAnt + posAnt/40  ; tem que somar posAnt/40 no ponteiro pois as linas da string terminam com /0 !!
+
+    loadn R1, #tela0Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    add R2, R1, r0  ; R2 = Tela1Linha0 + posAnt
+    loadn R4, #40
+    div R3, R0, R4  ; R3 = posAnt/40
+    add R2, R2, R3  ; R2 = Tela1Linha0 + posAnt + posAnt/40
+    
+    loadi R5, R2    ; R5 = Char (Tela(posAnt))
+    
+    outchar R5, R0  ; Apaga o Obj na tela com o Char correspondente na memoria do cenario
+    
+    pop R5
+    pop R4
+    pop R3
+    pop R2
+    pop R1
+    pop R0
+    rts
+;---------------------------------- 
+    
+MoveNave_RecalculaPos:      ; Recalcula posicao da Nave em funcao das Teclas pressionadas
+    push R0
+    push R1
+    push R2
+    push R3
+
+    load R0, posNave
+    
+    inchar R1               ; Le Teclado para controlar a Nave
+    loadn R2, #'a'
+    cmp R1, R2
+    jeq MoveNave_RecalculaPos_A
+    
+    loadn R2, #'d'
+    cmp R1, R2
+    jeq MoveNave_RecalculaPos_D
+        
+    loadn R2, #'w'
+    cmp R1, R2
+    jeq MoveNave_RecalculaPos_W
+        
+    loadn R2, #'s'
+    cmp R1, R2
+    jeq MoveNave_RecalculaPos_S
+    
+    loadn R2, #' '
+    cmp R1, R2
+    jeq MoveNave_RecalculaPos_Tiro
+    
+  MoveNave_RecalculaPos_Fim:    ; Se nao for nenhuma tecla valida, vai embora
+    store posNave, R0
+    pop R3
+    pop R2
+    pop R1
+    pop R0
+    rts
+
+  MoveNave_RecalculaPos_A:  ; Move Nave para Esquerda
+    loadn R1, #40
+    loadn R2, #0
+    mod R1, R0, R1      ; Testa condicoes de Contorno 
+    cmp R1, R2
+    jeq MoveNave_RecalculaPos_Fim
+    dec R0  ; pos = pos -1
+    jmp MoveNave_RecalculaPos_Fim
+        
+  MoveNave_RecalculaPos_D:  ; Move Nave para Direita    
+    loadn R1, #40
+    loadn R2, #39
+    mod R1, R0, R1      ; Testa condicoes de Contorno 
+    cmp R1, R2
+    jeq MoveNave_RecalculaPos_Fim
+    inc R0  ; pos = pos + 1
+    jmp MoveNave_RecalculaPos_Fim
+    
+  MoveNave_RecalculaPos_W:  ; Move Nave para Cima
+    loadn R1, #40
+    cmp R0, R1      ; Testa condicoes de Contorno 
+    jle MoveNave_RecalculaPos_Fim
+    sub R0, R0, R1  ; pos = pos - 40
+    jmp MoveNave_RecalculaPos_Fim
+
+  MoveNave_RecalculaPos_S:  ; Move Nave para Baixo
+    loadn R1, #1159
+    cmp R0, R1      ; Testa condicoes de Contorno 
+    jgr MoveNave_RecalculaPos_Fim
+    loadn R1, #40
+    add R0, R0, R1  ; pos = pos + 40
+    jmp MoveNave_RecalculaPos_Fim   
+    
+  MoveNave_RecalculaPos_Tiro:   
+    loadn R1, #1            ; Se Atirou:
+    store FlagTiro, R1      ; FlagTiro = 1
+    store posTiro, R0       ; posTiro = posNave
+    jmp MoveNave_RecalculaPos_Fim   
+;----------------------------------
+MoveNave_Desenha:   ; Desenha caractere da Nave
+    push R0
+    push R1
+    
+    Loadn R1, #'X'  ; Nave
+    load R0, posNave
+    outchar R1, R0
+    store posAntNave, R0    ; Atualiza Posicao Anterior da Nave = Posicao Atual
+    
+    pop R1
+    pop R0
+    rts
+
+;----------------------------------
+
+
+	
+;********************************************************
+;                       SAIR
+;********************************************************
+Sair:
+    call ApagaTela
+    ; Pode colocar mensagem de despedida, ou parar o programa
+    loadn r0, #100
+    loadn r1, #MsgFim
+    
+    call ImprimeStr
+
+    halt
+
+
+;------------------------
+
+	
+;********************************************************
+;                       APAGA TELA
+;********************************************************
+ApagaTela:
+	push r0
+	push r1
+	
+	loadn r0, #1200		; apaga as 1200 posicoes da Tela
+	loadn r1, #' '		; com "espaco"
+	
+	   ApagaTela_Loop:	;;label for(r0=1200;r3>0;r3--)
+		dec r0
+		outchar r1, r0
+		jnz ApagaTela_Loop
+ 
+	pop r1
+	pop r0
+	rts	
+	
+;------------------------	
+
+
+
+;********************************************************
+;                   IMPRIME STRING
+;********************************************************
+    
+ImprimeStr: ;  Rotina de Impresao de Mensagens:    r0 = Posicao da tela que o primeiro caractere da mensagem sera' impresso;  r1 = endereco onde comeca a mensagem; r2 = cor da mensagem.   Obs: a mensagem sera' impressa ate' encontrar "/0"
+    push r0 ; protege o r0 na pilha para preservar seu valor
+    push r1 ; protege o r1 na pilha para preservar seu valor
+    push r2 ; protege o r1 na pilha para preservar seu valor
+    push r3 ; protege o r3 na pilha para ser usado na subrotina
+    push r4 ; protege o r4 na pilha para ser usado na subrotina
+    
+    loadn r3, #'\0' ; Criterio de parada
+
+   ImprimeStr_Loop: 
+        loadi r4, r1
+        cmp r4, r3      ; If (Char == \0)  vai Embora
+        jeq ImprimeStr_Sai
+        add r4, r2, r4  ; Soma a Cor
+        outchar r4, r0  ; Imprime o caractere na tela
+        inc r0          ; Incrementa a posicao na tela
+        inc r1          ; Incrementa o ponteiro da String
+        jmp ImprimeStr_Loop
+    
+   ImprimeStr_Sai:  
+    pop r4  ; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+    pop r3
+    pop r2
+    pop r1
+    pop r0
+    rts
+    
+    
+
+
+;------------------------
+
+;********************************************************
+;                       DELAY
+;********************************************************       
+
+
+Delay:
+                        ;Utiliza Push e Pop para nao afetar os Ristradores do programa principal
+    Push R0
+    Push R1
+    
+    Loadn R1, #50  ; a
+   Delay_volta2:                ;Quebrou o contador acima em duas partes (dois loops de decremento)
+    Loadn R0, #3000 ; b
+   Delay_volta: 
+    Dec R0                  ; (4*a + 6)b = 1000000  == 1 seg  em um clock de 1MHz
+    JNZ Delay_volta 
+    Dec R1
+    JNZ Delay_volta2
+    
+    Pop R1
+    Pop R0
+    
+    RTS                         ;return
+
+;------------------------
+
+
+;********************************************************
+;                       IMPRIME TELA
+;********************************************************   
+
+ImprimeTela:    ;  Rotina de Impresao de Cenario na Tela Inteira
+        ;  r1 = endereco onde comeca a primeira linha do Cenario
+        ;  r2 = cor do Cenario para ser impresso
+
+    push r0 ; protege o r3 na pilha para ser usado na subrotina
+    push r1 ; protege o r1 na pilha para preservar seu valor
+    push r2 ; protege o r1 na pilha para preservar seu valor
+    push r3 ; protege o r3 na pilha para ser usado na subrotina
+    push r4 ; protege o r4 na pilha para ser usado na subrotina
+    push r5 ; protege o r4 na pilha para ser usado na subrotina
+
+    loadn R0, #0    ; posicao inicial tem que ser o comeco da tela!
+    loadn R3, #40   ; Incremento da posicao da tela!
+    loadn R4, #41   ; incremento do ponteiro das linhas da tela
+    loadn R5, #1200 ; Limite da tela!
+    
+   ImprimeTela_Loop:
+        call ImprimeStr
+        add r0, r0, r3      ; incrementaposicao para a segunda linha na tela -->  r0 = R0 + 40
+        add r1, r1, r4      ; incrementa o ponteiro para o comeco da proxima linha na memoria (40 + 1 porcausa do /0 !!) --> r1 = r1 + 41
+        cmp r0, r5          ; Compara r0 com 1200
+        jne ImprimeTela_Loop    ; Enquanto r0 < 1200
+
+    pop r5  ; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+    pop r4
+    pop r3
+    pop r2
+    pop r1
+    pop r0
+    rts
+                
+;---------------------
+
+
+
 
 efeito : var #1200
   ;Linha 0
@@ -1290,102 +1696,7 @@ efeito : var #1200
   static efeito + #1197, #1538
   static efeito + #1198, #1538
   static efeito + #1199, #2396
-	
-;********************************************************
-;                       MENU
-;********************************************************
-
-menu:
-    call ApagaTela
-
-    call printefeitoScreen
-
-    ; Exibir titulo
-    loadn r0, #526 ; posicao na tela
-    loadn r1, #MsgTitulo
-    loadn r2, #0
-    call ImprimeStr
-
-    ; Exibir Opcao 1
-    loadn r0, #605 ; posicao na tela
-    loadn r1, #MsgOpcao1
-    loadn r2, #0
-    ;call ImprimeStr
-
-    ; Exibir Opcao 2
-    loadn r0, #605 ; posicao na tela
-    loadn r1, #MsgOpcao2
-    loadn r2, #0
-    call ImprimeStr
-
-    ; provavel ter que fazer o numero virar char!!!
-    inchar r1
-    store r1, OpInicio
-
-    ; Verifica opcao
-    loadn r2, #'1'
-    cmp r1, r2
-    je Jogar 
-
-    loadn r2, #'2'
-    cmp r1, r2
-    je Sair 
-
-    ; Se invalido, volta ao menu
-
-    jmp menu
-
-;------------------------
-	
-;********************************************************
-;                       JOGAR
-;********************************************************
-Jogar:
-
-
-
-
-;------------------------
-
-	
-;********************************************************
-;                       SAIR
-;********************************************************
-Sair:
-    call ApagaTela
-    ; Pode colocar mensagem de despedida, ou parar o programa
-    loadn r0, #100
-    loads r1, MsgFim
-    
-    ;call ImprimeStr
-
-    halt
-
-
-;------------------------
-
-	
-;********************************************************
-;                       APAGA TELA
-;********************************************************
-ApagaTela:
-	push r0
-	push r1
-	
-	loadn r0, #1200		; apaga as 1200 posicoes da Tela
-	loadn r1, #' '		; com "espaco"
-	
-	   ApagaTela_Loop:	;;label for(r0=1200;r3>0;r3--)
-		dec r0
-		outchar r1, r0
-		jnz ApagaTela_Loop
- 
-	pop r1
-	pop r0
-	rts	
-	
-;------------------------	
-
+  
 
 ;********************************************************
 ;                       PRINT SCREEN - Fase
@@ -1417,6 +1728,3 @@ printefeitoScreen:
   rts
 
 ;------------------------
-
-
-; Fim do jogo

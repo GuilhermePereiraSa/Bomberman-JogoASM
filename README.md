@@ -19,6 +19,7 @@ Este projeto foi criado com fins educacionais, explorando conceitos de baixo ní
    ```bash
    git clone https://github.com/seu-usuario/Bomberman-JogoASM.git
    cd Bomberman-JogoASM
+   ```
 
 2. Acesse o site Giroto Emulator:
    https://proc.giroto.dev/
@@ -30,4 +31,5 @@ Este projeto foi criado com fins educacionais, explorando conceitos de baixo ní
 
 ## Créditos: 
 - Eduardo Simões, https://github.com/simoesusp/Processador-ICMC/blob/master/Software_Assembly/Nave11.asm
+
 
