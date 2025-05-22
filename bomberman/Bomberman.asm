@@ -14,11 +14,14 @@ MsgOpcao2: string "2 - SAIR"
 OpInicio: var #1 ; guarda a escolha do jogador
 
 
-posAZUL: var #1         ; Contem a posicao atual do Azul - inicial = 1043
+posAzul: var #1         ; Contem a posicao atual do Azul - inicial = 1043
 posAntAzul: var #1      ; Contem a posicao anterior do Azul
 
-posROSA: var #1         ; Contem a posicao atual da Rosa - inicial = 156
+posRosa: var #1         ; Contem a posicao atual da Rosa - inicial = 156
 posAntRosa: var #1      ; Contem a posicao anterior da Rosa
+
+bomba: var #1           ; Contem a posicao da bomba
+flagBomba: var #1       ; Flag de bomba acionada
 
 
 ; Memoria de Cenario necessaria - criar um vetor com todas as info da tela atual - deve ter de modificacao - caso a bomba seja explodida
@@ -99,55 +102,54 @@ menu:
 ;********************************************************
 Jogar:
     
-    call ApagaTela
-    loadn R1, #tela1Linha0  ; Endereco onde comeca a primeira linha do cenario!!
-    loadn R2, #1536             ; cor branca!
-    call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+    ;call ApagaTela
+    ;loadn R1, #tela1Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    ;loadn R2, #1536             ; cor branca!
+    ;call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+    ;
+    ;loadn R1, #tela2Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    ;loadn R2, #512              ; cor branca!
+    ;call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+    ;
+    ;loadn R1, #tela3Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    ;loadn R2, #2816             ; cor branca!
+    ;call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+    ;loadn R1, #tela4Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    ;loadn R2, #256              ; cor branca!
+    ;call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+
+
+    Loadn R0, #1043            
+    store posAzul, R0       ; Zera Posicao do AZUL
+    store posAntAzul, R0    ; Zera Posicao Anterior do AZUL
+
     
-    loadn R1, #tela2Linha0  ; Endereco onde comeca a primeira linha do cenario!!
-    loadn R2, #512              ; cor branca!
-    call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
-    
-    loadn R1, #tela3Linha0  ; Endereco onde comeca a primeira linha do cenario!!
-    loadn R2, #2816             ; cor branca!
-    call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
-    loadn R1, #tela4Linha0  ; Endereco onde comeca a primeira linha do cenario!!
-    loadn R2, #256              ; cor branca!
-    call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
-    Loadn R0, #0            
-    store posNave, R0       ; Zera Posicao Atual da Nave
-    store posAntNave, R0    ; Zera Posicao Anterior da Nave
-    
-    store FlagTiro, R0      ; Zera o Flag para marcar que ainda nao Atirou!
-    store posTiro, R0       ; Zera Posicao Atual do Tiro
-    store posAntTiro, R0    ; Zera Posicao Anterior do Tiro
-    
-    Loadn R0, #240
-    store posAlien, R0      ; Zera Posicao Atual do Alien
-    store posAntAlien, R0   ; Zera Posicao Anterior do Alien
+    Loadn R0, #156
+    store posRosa, R0      ; Zera Posicao Atual da ROSA
+    store posAntRosa, R0   ; Zera Posicao Anterior da ROSA
     
     Loadn R0, #0            ; Contador para os Mods = 0
     loadn R2, #0            ; Para verificar se (mod(c/10)==0
+
     Loop:
     
-        loadn R1, #10
+        loadn R1, #10   ; movimentacao do azul
         mod R1, R0, R1
-        cmp R1, R2      ; if (mod(c/10)==0
-        ceq MoveNave    ; Chama Rotina de movimentacao da Nave
+        cmp R1, R2      ; 
+        ceq MoveAzul    ; 
     
         loadn R1, #30
         mod R1, R0, R1
-        cmp R1, R2      ; if (mod(c/30)==0
-        ceq MoveAlien   ; Chama Rotina de movimentacao do Alien
-    
-        loadn R1, #2
-        mod R1, R0, R1
-        cmp R1, R2      ; if (mod(c/2)==0
-        ceq MoveTiro    ; Chama Rotina de movimentacao do Tiro
+        cmp R1, R2      ; 
+        ceq MoveRosa   ;
     
         call Delay
         inc R0  ;c++
         jmp Loop
+
+
+
+; Todo movimento de personagem com acionamento da tecla de bomba deve resultar em onde a bomba sera plantada
 
 
 
@@ -157,29 +159,30 @@ Jogar:
 ;             FUNÇÕES AUXILIARES DE MOVIMENTO
 ;********************************************************
 
-MoveNave:
+MoveAzul:
     push r0
     push r1
     
-    call MoveNave_RecalculaPos      ; Recalcula Posicao da Nave
+    call MoveAzul_RecalculaPos      ; Recalcula Posicao do AZUL
 
 ; So' Apaga e Redesenha se (pos != posAnt)
 ;   If (posNave != posAntNave)  {   
-    load r0, posNave
-    load r1, posAntNave
+
+    load r0, posAzul
+    load r1, posAntAzul
     cmp r0, r1
-    jeq MoveNave_Skip
-        call MoveNave_Apaga
-        call MoveNave_Desenha       ;}
-  MoveNave_Skip:
-    
-    pop r1
-    pop r0
-    rts
+    jeq MoveAzul_Skip
+        call MoveAzul_Apaga
+        call MoveAzul_Desenha       ;}
+    MoveAzul_Skip:
+      
+      pop r1
+      pop r0
+      rts
 
 ;--------------------------------
     
-MoveNave_Apaga:     ; Apaga a Nave preservando o Cenario!
+MoveAzul_Apaga:     ; Apaga a Nave preservando o Cenario!
     push R0
     push R1
     push R2
@@ -187,11 +190,11 @@ MoveNave_Apaga:     ; Apaga a Nave preservando o Cenario!
     push R4
     push R5
 
-    load R0, posAntNave ; R0 = posAnt
+    load R0, posAntAzul ; R0 = posAnt
     
     ; --> R2 = Tela1Linha0 + posAnt + posAnt/40  ; tem que somar posAnt/40 no ponteiro pois as linas da string terminam com /0 !!
 
-    loadn R1, #tela0Linha0  ; Endereco onde comeca a primeira linha do cenario!!
+    loadn R1, #0  ; Endereco onde comeca a primeira linha do cenario!!
     add R2, R1, r0  ; R2 = Tela1Linha0 + posAnt
     loadn R4, #40
     div R3, R0, R4  ; R3 = posAnt/40
@@ -210,97 +213,111 @@ MoveNave_Apaga:     ; Apaga a Nave preservando o Cenario!
     rts
 ;---------------------------------- 
     
-MoveNave_RecalculaPos:      ; Recalcula posicao da Nave em funcao das Teclas pressionadas
+MoveAzul_RecalculaPos:      ; Recalcula posicao do Azul em funcao das Teclas pressionadas
     push R0
     push R1
     push R2
     push R3
 
-    load R0, posNave
+    load R0, posAzul
     
-    inchar R1               ; Le Teclado para controlar a Nave
+    inchar R1               ; Le Teclado para controlar o Azul
     loadn R2, #'a'
     cmp R1, R2
-    jeq MoveNave_RecalculaPos_A
+    jeq MoveAzul_RecalculaPos_A
     
     loadn R2, #'d'
     cmp R1, R2
-    jeq MoveNave_RecalculaPos_D
+    jeq MoveAzul_RecalculaPos_D
         
     loadn R2, #'w'
     cmp R1, R2
-    jeq MoveNave_RecalculaPos_W
+    jeq MoveAzul_RecalculaPos_W
         
     loadn R2, #'s'
     cmp R1, R2
-    jeq MoveNave_RecalculaPos_S
+    jeq MoveAzul_RecalculaPos_S
     
-    loadn R2, #' '
+    loadn R2, #'e'
     cmp R1, R2
-    jeq MoveNave_RecalculaPos_Tiro
+    jeq MoveAzul_RecalculaPos_Bomba
     
-  MoveNave_RecalculaPos_Fim:    ; Se nao for nenhuma tecla valida, vai embora
-    store posNave, R0
+  MoveAzul_RecalculaPos_Fim:    ; Se nao for nenhuma tecla valida, vai embora
+    store posAzul, R0
     pop R3
     pop R2
     pop R1
     pop R0
     rts
 
-  MoveNave_RecalculaPos_A:  ; Move Nave para Esquerda
+  MoveAzul_RecalculaPos_A:  ; Move Nave para Esquerda
     loadn R1, #40
     loadn R2, #0
     mod R1, R0, R1      ; Testa condicoes de Contorno 
     cmp R1, R2
-    jeq MoveNave_RecalculaPos_Fim
+    jeq MoveAzul_RecalculaPos_Fim
     dec R0  ; pos = pos -1
-    jmp MoveNave_RecalculaPos_Fim
+    jmp MoveAzul_RecalculaPos_Fim
         
-  MoveNave_RecalculaPos_D:  ; Move Nave para Direita    
+  MoveAzul_RecalculaPos_D:  ; Move Nave para Direita    
     loadn R1, #40
     loadn R2, #39
     mod R1, R0, R1      ; Testa condicoes de Contorno 
     cmp R1, R2
-    jeq MoveNave_RecalculaPos_Fim
+    jeq MoveAzul_RecalculaPos_Fim
     inc R0  ; pos = pos + 1
-    jmp MoveNave_RecalculaPos_Fim
+    jmp MoveAzul_RecalculaPos_Fim
     
-  MoveNave_RecalculaPos_W:  ; Move Nave para Cima
+  MoveAzul_RecalculaPos_W:  ; Move Nave para Cima
     loadn R1, #40
     cmp R0, R1      ; Testa condicoes de Contorno 
-    jle MoveNave_RecalculaPos_Fim
+    jle MoveAzul_RecalculaPos_Fim
     sub R0, R0, R1  ; pos = pos - 40
-    jmp MoveNave_RecalculaPos_Fim
+    jmp MoveAzul_RecalculaPos_Fim
 
-  MoveNave_RecalculaPos_S:  ; Move Nave para Baixo
+  MoveAzul_RecalculaPos_S:  ; Move Nave para Baixo
     loadn R1, #1159
     cmp R0, R1      ; Testa condicoes de Contorno 
-    jgr MoveNave_RecalculaPos_Fim
+    jgr MoveAzul_RecalculaPos_Fim
     loadn R1, #40
     add R0, R0, R1  ; pos = pos + 40
-    jmp MoveNave_RecalculaPos_Fim   
+    jmp MoveAzul_RecalculaPos_Fim   
     
-  MoveNave_RecalculaPos_Tiro:   
+  MoveAzul_RecalculaPos_Bomba:   
     loadn R1, #1            ; Se Atirou:
-    store FlagTiro, R1      ; FlagTiro = 1
-    store posTiro, R0       ; posTiro = posNave
-    jmp MoveNave_RecalculaPos_Fim   
+    store flagBomba, R1      ; flagBomba = 1
+
+    store posTiro, R0       ; 
+
+    jmp MoveAzul_RecalculaPos_Fim   
 ;----------------------------------
-MoveNave_Desenha:   ; Desenha caractere da Nave
+MoveAzul_Desenha:   ; Desenha caractere da Nave
     push R0
     push R1
     
-    Loadn R1, #'X'  ; Nave
-    load R0, posNave
+    Loadn R1, #0  ; index personagem
+    load R0, posAzul
     outchar R1, R0
-    store posAntNave, R0    ; Atualiza Posicao Anterior da Nave = Posicao Atual
+    store posAntAzul, R0    ; Atualiza Posicao Anterior da Nave = Posicao Atual
     
     pop R1
     pop R0
     rts
 
-;----------------------------------
+;---------------------------------- 
 
+;********************************************************
+;                       COLISAO
+;********************************************************
+; index 1 : bomba - independente se do adversario ou nao 
+; index 2 : bloco
+; index 3 : luck box
+; index 4 : caixa 
+
+
+
+
+;----------------------------------
 
 	
 ;********************************************************
@@ -610,7 +627,7 @@ efeito : var #1200
   static efeito + #153, #127
   static efeito + #154, #260
   static efeito + #155, #800
-  static efeito + #156, #3328
+  static efeito + #156, #32
   static efeito + #157, #1538
   static efeito + #158, #2050
   static efeito + #159, #1538
@@ -1543,7 +1560,7 @@ efeito : var #1200
   static efeito + #1040, #1538
   static efeito + #1041, #2050
   static efeito + #1042, #1538
-  static efeito + #1043, #3072
+  static efeito + #1043, #32
   static efeito + #1044, #127
   static efeito + #1045, #770
   static efeito + #1046, #127

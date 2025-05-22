@@ -5,7 +5,7 @@ w - cima
 a - esquerda
 s - baixo
 d - direita
-i - soltar bomba
+e - soltar bomba
 
 mover personagem 2
 o - cima

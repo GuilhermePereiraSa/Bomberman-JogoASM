@@ -162,7 +162,7 @@ efeito : var #1200
   static efeito + #153, #127
   static efeito + #154, #260
   static efeito + #155, #800
-  static efeito + #156, #3328
+  static efeito + #156, #32
   static efeito + #157, #1538
   static efeito + #158, #2050
   static efeito + #159, #1538
@@ -1095,7 +1095,7 @@ efeito : var #1200
   static efeito + #1040, #1538
   static efeito + #1041, #2050
   static efeito + #1042, #1538
-  static efeito + #1043, #3072
+  static efeito + #1043, #32
   static efeito + #1044, #127
   static efeito + #1045, #770
   static efeito + #1046, #127

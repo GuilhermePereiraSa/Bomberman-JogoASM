@@ -674,7 +674,7 @@ begin
 							
 								
 
---************************************************************************
+1--************************************************************************
 -- EXECUTE STATE
 --************************************************************************								
 					
@@ -687,8 +687,8 @@ begin
 				M1<= MAR;
 				Rw<= '0';
 				SelM2 := sMEM;
-				LoadReg(RX) := '1';	
-
+				LoadReg(RX) := '1';
+				state := fetch;
 				state := fetch;
 			END IF;
 							
@@ -700,7 +700,6 @@ begin
 				M3 := REG(RX);
 				M1 <= MAR;
 				M5 <= M3;
-
 				state := fetch;
 			END IF;
 						
@@ -709,10 +708,9 @@ begin
 -- EXEC CALL    Pilha <- PC e PC <- 16bit END :
 --========================================================================
 			IF(IR(15 DOWNTO 10) = CALL) THEN
-				M1 <= PC;				-- M1 <- PC
-				Rw <= '0';				-- Rw <= '0'
-				LoadPC := '1';				-- LoadPC <- 1
-				
+				M1 <= PC;
+				RW <= '0';
+				LoadPc := '1';
 				state := fetch;
 			END IF;
 
@@ -720,10 +718,9 @@ begin
 -- EXEC RTS 			PC <- Mem[SP]
 --========================================================================
 			IF(IR(15 DOWNTO 10) = RTS) THEN
-				M1 <= SP;				-- M1 <- PC
-				Rw <= '0';				-- Rw <= '0'
-				LoadPC := '1';				-- LoadPC <- 1
-					
+				M1 <= SP;
+				RW <= '0';
+				LoadPC := '1';
 				state := exec2;
 			END IF;
 			
@@ -732,17 +729,17 @@ begin
 --========================================================================
 			IF(IR(15 DOWNTO 10) = POP) THEN
 				M1 <= SP;
-				RW <= '0';
-				if(IR(6) = '0') THEN
-					selM2 := sMEM;
-					loadReg(RX) := '1';
-				ELSE 
-					selM6 := sMEM;
+				RW <= '1';
+				IF(IR(6)='0') THEN
+					SelM2 := sMEM;
+					LoadReg(RX) := '1';
+				ELSE
+					SelM6 := sMEM;
 					LoadFR := '1';
-				END IF;
-
+				END IF;	
 				state := fetch;
-			END IF;		
+			END IF;
+					
 		
 -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 				
@@ -756,7 +753,7 @@ begin
 -- EXEC2 RTS 			PC <- Mem[SP]
 --========================================================================
 			IF(IR(15 DOWNTO 10) = RTS) THEN
-				IncPC := '1';	
+				IncPC := '1';
 				state := fetch;
 			END IF;				
 
@@ -855,7 +852,6 @@ BEGIN
 			ELSE
 				auxFR(3) <= '0';  -- FR = <...|zero|equal|lesser|greater>
 			end if;
-
 			if(AUX < x"0000") THEN   -- NEGATIVO
 				auxFR(9) <= '1';  
 			ELSE
