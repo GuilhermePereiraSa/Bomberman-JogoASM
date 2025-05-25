@@ -9,7 +9,7 @@ MsgFim: string "OBRIGADO POR JOGAR!"
 
 
 MsgTitulo: string "==== BOMBERMAN ===="
-MsgOpcao1: string "1 - JOGAR"
+MsgOpcao1: string "1 - JOGAR"asa
 MsgOpcao2: string "2 - SAIR"
 OpInicio: var #1 ; guarda a escolha do jogador
 
