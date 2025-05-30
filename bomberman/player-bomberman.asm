@@ -21,35 +21,11 @@ posRosa: var #1         ; Contem a posicao atual da Rosa - inicial = 156
 posAntRosa: var #1      ; Contem a posicao anterior da Rosa
 
 bomba: var #1           ; Contem a posicao da bomba
-flagBomba: var #1       ; Flag de bomba acionada
+;flagBomba: var #1       ; Flag de bomba acionada
 
 
-; Memoria de Cenario necessaria - criar um vetor com todas as info da tela atual - deve ter de modificacao - caso a bomba seja explodida
-; todos os blocos sao intransponiveis
-
-; como faz a colisao de qualquer coisa no mapa? - verifica onde o player esta: posicao do player e onde ele vai casos:
-; : se onde o player esta agora, tiver disparo da tecla de (onde o esta o bloco) - deny - nao faça nada
-
-; e assim como o jogador - instanciamos cada bloco ou caixa para modificá-los aqui
-
-; caixaS para efeitos -> explodir ou apenas passar por cima e ter efeito?
-
-; se caixa: caso a bomba exploda 
-;   -> e caixaS estiver numa regiao proxima e jogador NAO atingido (proximo) -> caixaS tem chance randomica (numeros, exemplo: se par entao sorteia dnv pra ver qual item) 
-;       (se impar, nao faz nada)
-;             faz o item aparecer no lugar onde foi explodida a caixa;
-;   
-;   -> (jogador atingido) 
-;     -> jogador de OUTRO numero sai como vitorioso apos um delay; conta apenas o primeiro que morrer; flagzinha pra isso
-
-
-; caso tecla R  -> jogador 1 bomba 
-; caso tecla I  -> jogador 2 bomba
-
-; bomba -> explosao em + -> se caixa estiver em +, explode normal
-; bomba -> se caixaS -> explode normal, chance de item
-
-; bomba alteracoes: caso colocamos efeitos especiais
+teclaLidaAzul: var #1
+teclaLidaRosa: var #1
 
 ;********************************************************
 ;                       MENU
@@ -102,22 +78,24 @@ menu:
 ;********************************************************
 Jogar:
     
-    ;call ApagaTela
-    ;loadn R1, #tela1Linha0  ; Endereco onde comeca a primeira linha do cenario!!
-    ;loadn R2, #1536             ; cor branca!
-    ;call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
-    ;
-    ;loadn R1, #tela2Linha0  ; Endereco onde comeca a primeira linha do cenario!!
-    ;loadn R2, #512              ; cor branca!
-    ;call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
-    ;
-    ;loadn R1, #tela3Linha0  ; Endereco onde comeca a primeira linha do cenario!!
-    ;loadn R2, #2816             ; cor branca!
-    ;call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
-    ;loadn R1, #tela4Linha0  ; Endereco onde comeca a primeira linha do cenario!!
-    ;loadn R2, #256              ; cor branca!
-    ;call ImprimeTela2           ;  Rotina de Impresao de Cenario na Tela Inteira
+    ; 0 branco                          0000 0000
+    ; 256 marrom                        0001 0000
+    ; 512 verde                         0010 0000
+    ; 768 oliva                         0011 0000
+    ; 1024 azul marinho                 0100 0000
+    ; 1280 roxo                         0101 0000
+    ; 1536 teal                         0110 0000
+    ; 1792 prata                        0111 0000
+    ; 2048 cinza                        1000 0000
+    ; 2304 vermelho                     1001 0000
+    ; 2560 lima                         1010 0000
+    ; 2816 amarelo                      1011 0000
+    ; 3072 azul                         1100 0000
+    ; 3328 rosa                         1101 0000
+    ; 3584 aqua                         1110 0000
+    ; 3840 branco                       1111 0000
 
+    ; carregar cenarios com as especificas cores;
 
     Loadn R0, #1043            
     store posAzul, R0       ; Zera Posicao do AZUL
@@ -131,182 +109,239 @@ Jogar:
     Loadn R0, #0            ; Contador para os Mods = 0
     loadn R2, #0            ; Para verificar se (mod(c/10)==0
 
-    Loop:
-        
 
-        ; Todo movimento de personagem com acionamento da tecla de bomba deve resultar em onde a bomba sera plantada
-        
-        loadn R1, #10   ; movimentacao do azul
-        mod R1, R0, R1
-        cmp R1, R2      ; 
-        ceq MoveAzul    ; 
-    
-        loadn R1, #10   ; movimentacao  do rosa - mod 10
-        mod R1, R0, R1
-        cmp R1, R2      ; 
-        ceq MoveRosa   ;
-    
-        call Delay
-        inc R0  ;c++
-        jmp Loop
-
-
-
-
-
-
-;------------------------
 
 ;********************************************************
-;             FUNÇÕES AUXILIARES DE MOVIMENTO
+;                       CENARIO - MAIN
 ;********************************************************
+                ; Definir largura do cenário (exemplo: 80 colunas)
+            loadn R8, #80        ; R8 = largura da tela
 
-MovePlayer:
-  push r0
-  push r1
-  
-  call MovePlayer_RecalculaPos      ; Recalcula Posicao do PLAYER
+            ; Loop sobre as camadas (0..7)
+            loadn R4, #0         ; R4 = índice da camada atual
+            CamadaLoop:
+                cmp   R4, #8
+                jeq   FimCenario     ; se R4 == 8, termina
+                jgr   FimCenario     ; se R4  > 8, termina
 
-; So' Apaga e Redesenha se (pos != posAnt)
-;   If (posNave != posAntNave)  {   
+                loadn R5, #0         ; R5 = índice da linha atual (0..29)
+            LinhaLoop:
+                cmp   R5, #30
+                jeq   ProximaCamada  ; se R5 == 30, vai pra próxima camada
+                jgr   ProximaCamada  ; se R5  > 30, idem
 
-  load r0, posPlayer
-  load r1, posAntPlayer
-  cmp r0, r1
-  jeq MovePlayer_Skip
-    call MovePlayer_Apaga
-    call MovePlayer_Desenha       ;}
-  MovePlayer_Skip:
-    
-    pop r1
-    pop r0
+                loadn R6, #0         ; R6 = índice da coluna atual
+            ColunaLoop:
+                cmp   R6, R8
+                jeq   ProximaLinha   ; se R6 == R8, próxima linha
+                jgr   ProximaLinha   ; se R6  > R8, idem
+
+    ; --- Cálculo do endereço do caractere no mapa ---
+            ; (Este exemplo assume que cada camada tem 30 linhas contíguas de largura R8.)
+
+            mov R7, R4
+            loadn R9, #30
+            mul R7, R7, R9      ; R7 = R4 * 30 (número de linhas em cada camada)
+            add R7, R7, R5      ; R7 = R4*30 + R5 (linha absoluta no mapa)
+            mul R7, R7, R8      ; R7 = (R4*30 + R5) * largura (offset total em colunas)
+            add R7, R7, R6      ; R7 = offset linear = linha*largura + coluna
+            add R7, R7, #tela0Linha0  ; R7 aponta para o byte do caractere (ex.: base do array de camadas)
+            load R0, R7         ; R0 = caractere no endereço calculado
+            cmp R0, #32         ; ASCII 32 = ' ' (transparente)
+            jeq SkipDraw        ; se for espaço, pula desenho (não sobrescreve)
+            outchar R0, R7      ; imprime caractere não-espaço na posição calculada:contentReference[oaicite:3]{index=3}
+        SkipDraw:
+            inc R6
+            jmp ColunaLoop
+        ProximaLinha:
+            inc R5
+            jmp LinhaLoop
+        ProximaCamada:
+            inc R4
+            jmp CamadaLoop
+        FimCenario:
+            ; (continua o fluxo do jogo: por exemplo, loop principal, espera de eventos, etc.)
+            rts
+
+;================================================================
+; LOOP PRINCIPAL (lê teclas e chama MovePlayer)
+;================================================================
+Loop:
+    inchar r1
+    store r1, teclaLidaAzul
+
+    inchar r1
+    store r1, teclaLidaRosa
+
+    ; --- Azul ---
+    load r0, posAzul
+    load r1, posAntAzul
+    load r2, teclaLidaAzul
+    call  MovePlayer
+    store r0, posAzul
+    store r1, posAntAzul
+
+    ; --- Bomba Azul? tecla 'e' ---
+    loadn r3, #'e'
+    load r4, teclaLidaAzul
+    cmp r4, r3
+    jeq DropBombAzul
+
+    ; --- Rosa ---
+    load  r0, posRosa
+    load  r1, posAntRosa
+    load  r2, teclaLidaRosa
+    call  MovePlayer
+    store r0, posRosa
+    store r1, posAntRosa
+
+    ; --- Bomba Rosa? tecla 'i' ---
+    loadn r3, #'i'
+    load  r4, teclaLidaRosa
+    cmp   r4, r3
+    jeq   DropBombRosa
+
+    call Delay
+    inc   r0      ; frame counter
+    jmp Loop
+
+;---------------------------------------------------------
+; ROTINA GENÉRICA DE MOVIMENTO (DRY)
+; Entrada:
+;   r0 = posAtual
+;   r2 = tecla lida (já vindo de teclaLidaAzul ou Rosa)
+; Saída:
+;   r0 = novaPos
+;   r1 = posAnt
+;---------------------------------------------------------
+RecalculaPosPlayer:
+    push  r1
+    push  r3
+
+    move  r1, r0          ; r1 ← posAnt
+
+    ; — teclas do PLAYER 1 (W/A/S/D) —
+    loadn r3, #'w'        ; cima
+    cmp   r2, r3
+    jeq   RP1_UP
+    loadn r3, #'s'        ; baixo
+    cmp   r2, r3
+    jeq   RP1_DOWN
+    loadn r3, #'a'        ; esquerda
+    cmp   r2, r3
+    jeq   RP1_LEFT
+    loadn r3, #'d'        ; direita
+    cmp   r2, r3
+    jeq   RP1_RIGHT
+
+    ; — teclas do PLAYER 2 (O/L/K/Ç) —
+    loadn r3, #'o'        ; cima
+    cmp   r2, r3
+    jeq   RP2_UP
+    loadn r3, #'l'        ; baixo
+    cmp   r2, r3
+    jeq   RP2_DOWN
+    loadn r3, #'k'        ; esquerda
+    cmp   r2, r3
+    jeq   RP2_LEFT
+    loadn r3, #'ç'        ; direita
+    cmp   r2, r3
+    jeq   RP2_RIGHT
+
+    ; não é movimento → sai
+    jmp   RP_END
+
+;========= PLAYER 1 MOVES ==========
+RP1_UP:
+    loadn r3, #40
+    cmp   r0, r3
+    jle   RP_END
+    sub   r0, r0, r3
+    jmp   RP_END
+
+RP1_DOWN:
+    loadn r3, #1159
+    cmp   r0, r3
+    jgr   RP_END
+    loadn r3, #40
+    add   r0, r0, r3
+    jmp   RP_END
+
+RP1_LEFT:
+    loadn r3, #40
+    loadn r4, #0
+    mod   r3, r0, r3
+    cmp   r3, r4
+    jeq   RP_END
+    dec   r0
+    jmp   RP_END
+
+RP1_RIGHT:
+    loadn r3, #40
+    loadn r4, #39
+    mod   r3, r0, r3
+    cmp   r3, r4
+    jeq   RP_END
+    inc   r0
+    jmp   RP_END
+
+;========= PLAYER 2 MOVES ==========
+RP2_UP:   jmp   RP1_UP
+RP2_DOWN: jmp   RP1_DOWN
+RP2_LEFT: jmp   RP1_LEFT
+RP2_RIGHT:jmp   RP1_RIGHT
+
+RP_END:
+    pop   r3
+    pop   r1
     rts
 
-;--------------------------------
-  
-MovePlayer_Apaga:     ; Apaga a Nave preservando o Cenario!
-  push R0
-  push R1
-  push R2
-  push R3
-  push R4
-  push R5
 
-  load R0, posAntPlayer ; R0 = posAnt
-  
-  ; --> R2 = Tela1Linha0 + posAnt + posAnt/40  ; tem que somar posAnt/40 no ponteiro pois as linas da string terminam com /0 !!
+;================================================================
+;                APAGA O PLAYER NA POSIÇÃO ANTIGA
+;================================================================
+; Usa r1 = posAntiga
+ApagaPlayer:
+    push  r2
+    push  r3
+    push  r4
+    push  r5
 
-  loadn R1, #0  ; Endereco onde comeca a primeira linha do cenario!!
-  add R2, R1, r0  ; R2 = Tela1Linha0 + posAnt
-  loadn R4, #40
-  div R3, R0, R4  ; R3 = posAnt/40
-  add R2, R2, R3  ; R2 = Tela1Linha0 + posAnt + posAnt/40
-  
-  loadi R5, R2    ; R5 = Char (Tela(posAnt))
-  
-  outchar R5, R0  ; Apaga o Obj na tela com o Char correspondente na memoria do cenario
-  
-  pop R5
-  pop R4
-  pop R3
-  pop R2
-  pop R1
-  pop R0
-  rts
-;---------------------------------- 
-  
-MovePlayer_RecalculaPos:      ; Recalcula posicao do Player em funcao das Teclas pressionadas
-  push R0
-  push R1
-  push R2
-  push R3
+    mov  r0, r1              ; r0 = posAnt
+    loadn r2, #0              ; base do cenário
+    add   r2, r2, r0          ; r2 = Tela1Linha0 + posAnt
+    loadn r4, #40
+    div   r3, r0, r4          ; linha = posAnt/40
+    add   r2, r2, r3          ; ajusta o deslocamento por linhas
+    loadi r5, r2              ; r5 = char original do cenário
+    outchar r5, r0            ; restaura o char do cenário
 
-  load R0, posPlayer
-  
-  inchar R1               ; Le Teclado para controlar o Player
-  loadn R2, #'a'
-  cmp R1, R2
-  jeq MovePlayer_RecalculaPos_A
-  
-  loadn R2, #'d'
-  cmp R1, R2
-  jeq MovePlayer_RecalculaPos_D
-    
-  loadn R2, #'w'
-  cmp R1, R2
-  jeq MovePlayer_RecalculaPos_W
-    
-  loadn R2, #'s'
-  cmp R1, R2
-  jeq MovePlayer_RecalculaPos_S
-  
-  loadn R2, #'e'
-  cmp R1, R2
-  jeq MovePlayer_RecalculaPos_Bomba
-  
-  MovePlayer_RecalculaPos_Fim:    ; Se nao for nenhuma tecla valida, vai embora
-  store posPlayer, R0
-  pop R3
-  pop R2
-  pop R1
-  pop R0
-  rts
+    pop   r5
+    pop   r4
+    pop   r3
+    pop   r2
+    rts
 
-  MovePlayer_RecalculaPos_A:  ; Move Nave para Esquerda
-  loadn R1, #40
-  loadn R2, #0
-  mod R1, R0, R1      ; Testa condicoes de Contorno 
-  cmp R1, R2
-  jeq MovePlayer_RecalculaPos_Fim
-  dec R0  ; pos = pos -1
-  jmp MovePlayer_RecalculaPos_Fim
-    
-  MovePlayer_RecalculaPos_D:  ; Move Nave para Direita    
-  loadn R1, #40
-  loadn R2, #39
-  mod R1, R0, R1      ; Testa condicoes de Contorno 
-  cmp R1, R2
-  jeq MovePlayer_RecalculaPos_Fim
-  inc R0  ; pos = pos + 1
-  jmp MovePlayer_RecalculaPos_Fim
-  
-  MovePlayer_RecalculaPos_W:  ; Move Nave para Cima
-  loadn R1, #40
-  cmp R0, R1      ; Testa condicoes de Contorno 
-  jle MovePlayer_RecalculaPos_Fim
-  sub R0, R0, R1  ; pos = pos - 40
-  jmp MovePlayer_RecalculaPos_Fim
+;================================================================
+;               DESENHA O PLAYER NA NOVA POSIÇÃO
+;================================================================
+; Usa r0 = posNova, r1 = posAntiga (para atualizar posAnt depois)
+DesenhaPlayer:
+    push  r2
+    push  r3
 
-  MovePlayer_RecalculaPos_S:  ; Move Nave para Baixo
-  loadn R1, #1159
-  cmp R0, R1      ; Testa condicoes de Contorno 
-  jgr MovePlayer_RecalculaPos_Fim
-  loadn R1, #40
-  add R0, R0, R1  ; pos = pos + 40
-  jmp MovePlayer_RecalculaPos_Fim   
-  
-  MovePlayer_RecalculaPos_Bomba:   
-  loadn R1, #1            ; Se Atirou:
-  store flagBomba, R1      ; flagBomba = 1
+    loadn r2, #0              ; índice do sprite/personagem
+    outchar r2, r0
+    store posAnt, r0          ; atualiza posAnt = nova pos
+    ; OBS: quem chamou deve armazenar posAnt em variáveis corretas
 
-  store posTiro, R0       ; 
+    pop   r3
+    pop   r2
+    rts
 
-  jmp MovePlayer_RecalculaPos_Fim   
 ;----------------------------------
-MovePlayer_Desenha:   ; Desenha caractere da Nave
-  push R0
-  push R1
-  
-  Loadn R1, #0  ; index personagem
-  load R0, posPlayer
-  outchar R1, R0
-  store posAntPlayer, R0    ; Atualiza Posicao Anterior da Nave = Posicao Atual
-  
-  pop R1
-  pop R0
-  rts
 
-;---------------------------------- 
+
 
 ;********************************************************
 ;                       COLISAO
@@ -317,9 +352,19 @@ MovePlayer_Desenha:   ; Desenha caractere da Nave
 ; index 4 : caixa 
 
 
+; Memoria de Cenario necessaria - criar um vetor com todas as info da tela atual - deve ter de modificacao - caso a bomba seja explodida
+; todos os blocos sao intransponiveis
+
+; como faz a colisao de qualquer coisa no mapa? - verifica onde o player esta: posicao do player e onde ele vai casos:
+; : se onde o player esta agora, tiver disparo da tecla de (onde o esta o bloco) - deny - nao faça nada
+
+; e assim como o jogador - instanciamos cada bloco ou caixa para modificá-los aqui
+
+; caixaS para efeitos -> explodir ou apenas passar por cima e ter efeito?
 
 
-;----------------------------------
+
+
 
 ;---------------------------------- 
 
@@ -331,6 +376,23 @@ MovePlayer_Desenha:   ; Desenha caractere da Nave
 ; limite de "tiques" para a bomba explodir? 3, eu acho
 
 
+
+; se caixa: caso a bomba exploda 
+;   -> e caixaS estiver numa regiao proxima e jogador NAO atingido (proximo) -> caixaS tem chance randomica (numeros, exemplo: se par entao sorteia dnv pra ver qual item) 
+;       (se impar, nao faz nada)
+;             faz o item aparecer no lugar onde foi explodida a caixa;
+;   
+;   -> (jogador atingido) 
+;     -> jogador de OUTRO numero sai como vitorioso apos um delay; conta apenas o primeiro que morrer; flagzinha pra isso
+
+
+; caso tecla E  -> jogador 1 bomba 
+; caso tecla I  -> jogador 2 bomba
+
+; bomba -> explosao em + -> se caixa estiver em +, explode normal
+; bomba -> se caixaS -> explode normal, chance de item
+
+; bomba alteracoes: caso colocamos efeitos especiais
 
 ;----------------------------------
 
@@ -474,24 +536,6 @@ ImprimeTela:    ;  Rotina de Impresao de Cenario na Tela Inteira
     rts
                 
 ;---------------------
-
-
-; 0 branco                          0000 0000
-; 256 marrom                        0001 0000
-; 512 verde                         0010 0000
-; 768 oliva                         0011 0000
-; 1024 azul marinho                 0100 0000
-; 1280 roxo                         0101 0000
-; 1536 teal                         0110 0000
-; 1792 prata                        0111 0000
-; 2048 cinza                        1000 0000
-; 2304 vermelho                     1001 0000
-; 2560 lima                         1010 0000
-; 2816 amarelo                      1011 0000
-; 3072 azul                         1100 0000
-; 3328 rosa                         1101 0000
-; 3584 aqua                         1110 0000
-; 3840 branco                       1111 0000
 
 
 

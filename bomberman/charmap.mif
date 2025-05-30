@@ -64,6 +64,8 @@ CONTENT BEGIN
 	38  :   10000001;
 	39  :   11111111;
 
+-- possibilidades: bomba e efeitos especiais -> efeitos de cada jogador podem aparecer na tela - poção do minecraft
+
 -- [5]  
 	40  :   00000000;
 	41  :   00000000;
