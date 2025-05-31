@@ -14,171 +14,20 @@ k - esquerda
 ç- direita
 i - soltar bomba
 
+strcpy
 
-ideias-strcmp-strcpy
+busca a instrução
 
-copiado - deepseek
+decodifica
 
-Para implementar as instruções strcpy e strcmp diretamente no hardware da CPU, precisamos:
+execução 1:
+    "load" para o mbr (load mbr, t(ry))
 
-Definir novos códigos de operação (opcodes) para as instruções
 
-Modificar a máquina de estados para reconhecer e executar as novas instruções
-
-Implementar a lógica de execução nos estados apropriados
-
-Passo 1: Adicionar novos opcodes no VHDL
-No início da arquitetura, adicione os novos códigos de operação:
-
-vhdl
--- Novas instruções
-CONSTANT STRCPY  : STD_LOGIC_VECTOR(5 downto 0) := "000111";  -- String Copy
-CONSTANT STRCMP  : STD_LOGIC_VECTOR(5 downto 0) := "000001";  -- String Compare
-Passo 2: Implementar STRCPY (String Copy)
-No estado decode, adicione:
-
-vhdl
---========================================================================
--- STRCPY (String Copy)    M[Ry] <- M[Rx] até encontrar 0
--- Formato: < inst(6) | Rx(3) | Ry(3) | xxxx >
---========================================================================
-if(IR(15 downto 10) = STRCPY) then
-    -- Configura para ler primeiro caractere da origem
-    M1 <= reg(Rx);
-    RW <= '0';
-    LoadMAR := '1';  -- Armazena endereço de origem
-    state := strcpy1;
-end if;
-Crie novos estados para a cópia da string:
-
-vhdl
-when strcpy1 =>
-    -- Lê caractere da memória (origem)
-    M1 <= MAR;
-    RW <= '0';
-    state := strcpy2;
-
-when strcpy2 =>
-    -- Armazena caractere lido temporariamente
-    temp_char := Mem;
-    -- Configura para escrever no destino
-    M1 <= reg(Ry);
-    RW <= '1';
-    M5 <= temp_char;
-    state := strcpy3;
-
-when strcpy3 =>
-    -- Verifica fim da string (0)
-    if(temp_char = x"0000") then
-        state := fetch;
-    else
-        -- Incrementa ponteiros
-        reg(Rx) := reg(Rx) + 1;
-        reg(Ry) := reg(Ry) + 1;
-        -- Prepara próxima iteração
-        M1 <= reg(Rx);
-        RW <= '0';
-        LoadMAR := '1';
-        state := strcpy1;
-    end if;
-Passo 3: Implementar STRCMP (String Compare)
-No estado decode, adicione:
-
-vhdl
---========================================================================
--- STRCMP (String Compare)    Compara M[Rx] e M[Ry]
--- Formato: < inst(6) | Rx(3) | Ry(3) | Rz(3) | x >
--- Saída: Rz = 0 (iguais), 1 (diferentes), -1 (str1 < str2)
---========================================================================
-if(IR(15 downto 10) = STRCMP) then
-    -- Configura para ler primeiro caractere de str1
-    M1 <= reg(Rx);
-    RW <= '0';
-    LoadMAR := '1';
-    state := strcmp1;
-end if;
-Crie novos estados para a comparação de strings:
-
-vhdl
-when strcmp1 =>
-    -- Lê caractere de str1
-    char1 := Mem;
-    -- Configura para ler str2
-    M1 <= reg(Ry);
-    RW <= '0';
-    state := strcmp2;
-
-when strcmp2 =>
-    -- Lê caractere de str2
-    char2 := Mem;
-    -- Comparação
-    if(char1 = x"0000" and char2 = x"0000") then
-        -- Strings iguais
-        reg(Rz) := x"0000";
-        state := fetch;
-    elsif(char1 < char2) then
-        -- str1 < str2
-        reg(Rz) := x"FFFF";  -- -1 em complemento de 2
-        state := fetch;
-    elsif(char1 > char2) then
-        -- str1 > str2
-        reg(Rz) := x"0001";  -- 1
-        state := fetch;
-    else
-        -- Caracteres iguais, avança
-        reg(Rx) := reg(Rx) + 1;
-        reg(Ry) := reg(Ry) + 1;
-        -- Prepara próxima iteração
-        M1 <= reg(Rx);
-        RW <= '0';
-        LoadMAR := '1';
-        state := strcmp1;
-    end if;
-Passo 4: Atualizar a máquina de estados
-Modifique a definição do tipo STATES para incluir os novos estados:
-
-vhdl
-TYPE STATES is (fetch, decode, exec, exec2, halted,
-               strcpy1, strcpy2, strcpy3,   -- Estados para STRCPY
-               strcmp1, strcmp2);            -- Estados para STRCMP
-Passo 5: Implementar registradores temporários
-Adicione sinais para armazenamento temporário de caracteres:
-
-vhdl
--- Sinais para operações com strings
-signal temp_char : STD_LOGIC_VECTOR(15 downto 0);
-signal char1, char2 : STD_LOGIC_VECTOR(15 downto 0);
-Passo 6: Atualizar o processo principal
-No início do processo, declare as variáveis temporárias:
-
-vhdl
--- Variáveis temporárias para strings
-variable temp_char_var : STD_LOGIC_VECTOR(15 downto 0);
-variable char1_var, char2_var : STD_LOGIC_VECTOR(15 downto 0);
-Passo 7: Modificar o estado halted
-Atualize o estado halted para incluir as novas instruções:
-
-vhdl
-when halted =>
-    PONTO <= "111";    
-    state := halted;
-    halt_ack <= '1';
-    
-    -- Mantém as novas instruções acessíveis mesmo em halted
-    if(IR(15 downto 10) = STRCPY or IR(15 downto 10) = STRCMP) then
-        state := decode;
-    end if;
-Diagrama de estados simplificado:
-Fetch -> Decode
-   |        |
-   |        v
-   |     STRCPY? -> strcpy1 -> strcpy2 -> strcpy3 -> (fim ou loop)
-   |        |
-   |        v
-   |     STRCMP? -> strcmp1 -> strcmp2 -> (fim ou loop)
-   |        |
-   |        v
-   +----< Outras
+execução 2:
+    se nao for 0 - oque tem em mbr
+        "store" para rx
+    execução 1
 
 ;================================================================
 ; DROP BOMB GENÉRICA

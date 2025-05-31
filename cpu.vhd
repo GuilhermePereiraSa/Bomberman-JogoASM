@@ -44,7 +44,7 @@ ARCHITECTURE main of cpu is
 	CONSTANT LOADINDEX	: STD_LOGIC_VECTOR(5 downto 0) := "111100";		-- LOADI RX RY   -- RX <- M[RY]	Format: < inst(6) | RX(3) | RY(3) | xxxx >
 	CONSTANT STOREINDEX	: STD_LOGIC_VECTOR(5 downto 0) := "111101";		-- STOREI RX RY  -- M[RX] <- RY	Format: < inst(6) | RX(3) | RY(3) | xxxx >
 	CONSTANT MOV			: STD_LOGIC_VECTOR(5 downto 0) := "110011";		-- MOV RX RY    -- RX <- RY	  	Format: < inst(6) | RX(3) | RY(3) | xx | x0 >
-																								-- MOV RX SP    RX <- SP         Format: < inst(6) | RX(3) | xxx | xx | 01 >
+	CONSTANT STRCPY : STD_LOGIC_VECTOR(5 DOWNTO 0) := "110110"																						-- MOV RX SP    RX <- SP         Format: < inst(6) | RX(3) | xxx | xx | 01 >
 																								-- MOV SP RX    SP <- RX         Format: < inst(6) | RX(3) | xxx | xx | 11 >
 	
 	-- I/O Instructions:
@@ -109,6 +109,8 @@ ARCHITECTURE main of cpu is
 	signal FR				: STD_LOGIC_VECTOR(15 downto 0);	-- Flag Register: <...DIVbyZero|StackUnderflow|StackOverflow|DIVByZero|ARITHmeticOverflow|carRY|zero|equal|lesser|greater>
 	signal auxFR			: STD_LOGIC_VECTOR(15 downto 0);	-- Representa um barramento conectando a ULA ao Mux6 para escrever no FR
 
+
+	SIGNAL MBR : STD_LOGIC_VECTOR(15 DOWNTO 0);
 
 begin
 
@@ -659,7 +661,15 @@ begin
 				state := fetch;	
 				PONTO <= "101";
 			END IF;		
-							
+
+
+--========================================================================
+-- STRCPY: Copia string de RY para RX até encontrar byte nulo [0]
+--========================================================================		
+
+			IF(IR(15 downto 10) = STRCPY) then
+				state := exec;
+			end IF;							
 -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX			
 			
 			
@@ -692,6 +702,16 @@ begin
 				state := fetch;
 			END IF;
 							
+			
+--========================================================================
+-- EXEC STRCPY
+--========================================================================		
+				IF(IR(15 downto 10) = STRCPY) then
+					M1 <= Reg(Ry); -- carrega byte da origem
+					Rw <= '0';
+					state := exec2;
+				end IF;
+
 --========================================================================
 -- EXEC STORE DIReto 			M[END] <- RX
 --========================================================================
@@ -778,7 +798,26 @@ begin
 	end if;	
 	end process;
 
-	
+
+--========================================================================
+-- EXEC 2 STRCPY
+--========================================================================		
+
+			IF(IR(15 downto 10) = STRCPY) then
+				if(Mem(7 downto 0) = x"00") then
+					state := fetch;
+				else
+					M1 <= Reg(RX);
+					RW <= '1';
+					M5 <= x"00" & Mem(7 downto 0); -- escreve apenas o byte
+							
+					-- atualizar ponteiros;
+
+					Reg(RX) := Reg(RX) + 1; --incrementa destino 
+					Reg(RY) := Reg(RY) + 1;
+					state := exec;
+			end if;
+
 	
 	
 --************************************************************************
