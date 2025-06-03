@@ -1,7 +1,7 @@
 ; Tela 
 ; carrega tela de menu
 
-jmp menu
+jmp MostrarMenu
 
 Msg1: string "DESEJA JOGAR NOVAMENTE? (s/n)" ; Mensagem para jogar novamente
 OpSaidaFinal: var #1		; Contem a letra que foi digitada - 1 byte apenas
@@ -31,10 +31,10 @@ teclaLidaRosa: var #1
 ;                       MENU
 ;********************************************************
 
-menu:
+MostrarMenu:
     call ApagaTela
 
-    call printefeitoScreen
+    ; call printefeitoScreen -- Procedimento que ainda nao existe
 
     ; Exibir titulo
     loadn r0, #526 ; posicao na tela
@@ -49,34 +49,40 @@ menu:
     call ImprimeStr
 
     ; Exibir Opcao 2
-    loadn r0, #605 ; posicao na tela
+    loadn r0, #645 ; posicao na tela
     loadn r1, #MsgOpcao2
     loadn r2, #0
     call ImprimeStr
+  
+    ; Loop para esperar a entrada do jogador
+    MostrarMenu_Loop:
+        ; provavel ter que fazer o numero virar char!!!
+        inchar r1
+        ; store r1, OpInicio -- Ordem dos argumentos errados
+        store OpInicio, r1
 
-    ; provavel ter que fazer o numero virar char!!!
-    inchar r1
-    store r1, OpInicio
+        ; Verifica opcao
+        loadn r2, #'1'
+        cmp r1, r2
+        jeq main ; Sintaxe da instrucao errada, x(je) -> jeq
 
-    ; Verifica opcao
-    loadn r2, #'1'
-    cmp r1, r2
-    je Jogar 
+        loadn r2, #'2'
+        cmp r1, r2
+        jeq Sair ; Sintaxe da instrucao errada, x(je) -> jeq
 
-    loadn r2, #'2'
-    cmp r1, r2
-    je Sair 
+        call Delay
 
-    ; Se invalido, volta ao menu
-
-    jmp menu
+        ; Se invalido, espere pelo input
+        jmp MostrarMenu_Loop
 
 ;------------------------
 	
 ;********************************************************
-;                       JOGAR - MAIN
+;                 INICIALIZA JOGO - MAIN
+; Procedimento para executado inicialmente antes de 
+; iniciar o loop principal (procedimento Loop)
 ;********************************************************
-Jogar:
+main:
     
     ; 0 branco                          0000 0000
     ; 256 marrom                        0001 0000
@@ -97,249 +103,262 @@ Jogar:
 
     ; carregar cenarios com as especificas cores;
 
-    Loadn R0, #1043            
-    store posAzul, R0       ; Zera Posicao do AZUL
-    store posAntAzul, R0    ; Zera Posicao Anterior do AZUL
+    ; INICIALIZACAO DAS VARIAVEIS COM POSICAO
+    loadn r0, #1043            
+    store posAzul, r0       ; Zera Posicao do AZUL
+    store posAntAzul, r0    ; Zera Posicao Anterior do AZUL
 
     
-    Loadn R0, #156
-    store posRosa, R0      ; Zera Posicao Atual da ROSA
-    store posAntRosa, R0   ; Zera Posicao Anterior da ROSA
+    loadn r0, #156
+    store posRosa, r0      ; Zera Posicao Atual da ROSA
+    store posAntRosa, r0   ; Zera Posicao Anterior da ROSA
     
-    Loadn R0, #0            ; Contador para os Mods = 0
-    loadn R2, #0            ; Para verificar se (mod(c/10)==0
-
+    loadn r0, #0            ; Contador para os Mods = 0
+    loadn r2, #0            ; Para verificar se (mod(c/10)==0
 
 
 ;********************************************************
 ;                       CENARIO - MAIN
+; Procedimento que instancia o cenario inicial do jogo.
 ;********************************************************
-                ; Definir largura do cenário (exemplo: 80 colunas)
-            loadn R8, #80        ; R8 = largura da tela
+main_cenario:
+    ; Definir largura do cenário (exemplo: 80 colunas)
+    loadn r3, #80        ; r3 = largura da tela
 
-            ; Loop sobre as camadas (0..7)
-            loadn R4, #0         ; R4 = índice da camada atual
-            CamadaLoop:
-                cmp   R4, #8
-                jeq   FimCenario     ; se R4 == 8, termina
-                jgr   FimCenario     ; se R4  > 8, termina
+    ; Loop sobre as camadas (0..7)
+    loadn r4, #0         ; r4 = índice da camada atual
+    CamadaLoop:
+        loadn r1,#8
+        cmp   r4, r1 
+        jeq   FimCenario     ; se r4 == 8, termina
+        jgr   FimCenario     ; se r4  > 8, termina
 
-                loadn R5, #0         ; R5 = índice da linha atual (0..29)
-            LinhaLoop:
-                cmp   R5, #30
-                jeq   ProximaCamada  ; se R5 == 30, vai pra próxima camada
-                jgr   ProximaCamada  ; se R5  > 30, idem
+        loadn r5, #0         ; r5 = índice da linha atual (0..29)
+    LinhaLoop:
+        loadn r1, #30
+        cmp   r5, r1
+        jeq   ProximaCamada  ; se r5 == 30, vai pra próxima camada
+        jgr   ProximaCamada  ; se r5  > 30, idem
 
-                loadn R6, #0         ; R6 = índice da coluna atual
-            ColunaLoop:
-                cmp   R6, R8
-                jeq   ProximaLinha   ; se R6 == R8, próxima linha
-                jgr   ProximaLinha   ; se R6  > R8, idem
+        loadn r6, #0         ; r6 = índice da coluna atual
+    ColunaLoop:
+        cmp   r6, r3
+        jeq   ProximaLinha   ; se r6 == r3, próxima linha
+        jgr   ProximaLinha   ; se r6  > r3, idem
 
-    ; --- Cálculo do endereço do caractere no mapa ---
-            ; (Este exemplo assume que cada camada tem 30 linhas contíguas de largura R8.)
+; --- Cálculo do endereço do caractere no mapa ---
+    ; (Este exemplo assume que cada camada tem 30 linhas contíguas de largura r3.)
 
-            mov R7, R4
-            loadn R9, #30
-            mul R7, R7, R9      ; R7 = R4 * 30 (número de linhas em cada camada)
-            add R7, R7, R5      ; R7 = R4*30 + R5 (linha absoluta no mapa)
-            mul R7, R7, R8      ; R7 = (R4*30 + R5) * largura (offset total em colunas)
-            add R7, R7, R6      ; R7 = offset linear = linha*largura + coluna
-            add R7, R7, #tela0Linha0  ; R7 aponta para o byte do caractere (ex.: base do array de camadas)
-            load R0, R7         ; R0 = caractere no endereço calculado
-            cmp R0, #32         ; ASCII 32 = ' ' (transparente)
-            jeq SkipDraw        ; se for espaço, pula desenho (não sobrescreve)
-            outchar R0, R7      ; imprime caractere não-espaço na posição calculada:contentReference[oaicite:3]{index=3}
-        SkipDraw:
-            inc R6
-            jmp ColunaLoop
-        ProximaLinha:
-            inc R5
-            jmp LinhaLoop
-        ProximaCamada:
-            inc R4
-            jmp CamadaLoop
-        FimCenario:
-            ; (continua o fluxo do jogo: por exemplo, loop principal, espera de eventos, etc.)
-            rts
+    mov r7, r4
+    loadn r2, #30
+    mul r7, r7, r2      ; r7 = r4 * 30 (número de linhas em cada camada)
+    add r7, r7, r5      ; r7 = r4*30 + r5 (linha absoluta no mapa)
+    mul r7, r7, r3      ; r7 = (r4*30 + r5) * largura (offset total em colunas)
+    add r7, r7, r6      ; r7 = offset linear = linha*largura + coluna
+    loadn r1, #tela0Linha0
+    add r7, r7, r1  ; r7 aponta para o byte do caractere (ex.: base do array de camadas)
+    loadi r0, r7         ; r0 = caractere no endereço calculado
+    loadn r1, #32
+    cmp r0, r1         ; ASCII 32 = ' ' (transparente)
+    jeq SkipDraw        ; se for espaço, pula desenho (não sobrescreve)
+    outchar r0, r7      ; imprime caractere não-espaço na posição calculada:contentReference[oaicite:3]{index=3}
+    SkipDraw:
+        inc r6
+        jmp ColunaLoop
+    ProximaLinha:
+        inc r5
+        jmp LinhaLoop
+    ProximaCamada:
+        inc r4
+        jmp CamadaLoop
+    
+    FimCenario: ; havia um rts fora de contexto uma que nao houve nenhuma chamada (por call) para o procedimento atual, ou seja,
+                ; simplesmente causaria um erro fatal
 
 ;================================================================
 ; LOOP PRINCIPAL (lê teclas e chama MovePlayer)
 ;================================================================
-Loop:
-    inchar r1
-    store r1, teclaLidaAzul
+    Loop:
+        inchar r1
+        ; store r1, teclaLidaAzul -- Sintaxe errada
+	store teclaLidaAzul, r1
 
-    inchar r1
-    store r1, teclaLidaRosa
+	; Porque temos duas rotinas de leitura?
+        inchar r1
+        ; store r1, teclaLidaRosa
+	store teclaLidaRosa, r1
 
-    ; --- Azul ---
-    load r0, posAzul
-    load r1, posAntAzul
-    load r2, teclaLidaAzul
-    call  MovePlayer
-    store r0, posAzul
-    store r1, posAntAzul
+        ; --- Azul ---
+        load r0, posAzul
+        load r1, posAntAzul
+        load r2, teclaLidaAzul
+        ; call  MovePlayer -- chamada para procedimento que nao existe
+        ; store r0, posAzul -- sintaxe errada
+	store posAzul, r0
+        ; store r1, posAntAzul -- sintaxe errada
+	store posAntAzul, r1
 
-    ; --- Bomba Azul? tecla 'e' ---
-    loadn r3, #'e'
-    load r4, teclaLidaAzul
-    cmp r4, r3
-    jeq DropBombAzul
+        ; --- Bomba Azul? tecla 'e' ---
+        loadn r3, #'e'
+        load r4, teclaLidaAzul
+        cmp r4, r3
+        ; jeq DropBombAzul -- pulo para procedimento que nao existe
 
-    ; --- Rosa ---
-    load  r0, posRosa
-    load  r1, posAntRosa
-    load  r2, teclaLidaRosa
-    call  MovePlayer
-    store r0, posRosa
-    store r1, posAntRosa
+        ; --- Rosa ---
+        load  r0, posRosa
+        load  r1, posAntRosa
+        load  r2, teclaLidaRosa
+        ; call  MovePlayer -- chamada de procedimento que nao existe
+        ; store r0, posRosa -- sintaxe errada
+	store posRosa, r0
+        ; store r1, posAntRosa -- sintaxe errada
+	store posAntRosa, r1
 
-    ; --- Bomba Rosa? tecla 'i' ---
-    loadn r3, #'i'
-    load  r4, teclaLidaRosa
-    cmp   r4, r3
-    jeq   DropBombRosa
+        ; --- Bomba Rosa? tecla 'i' ---
+        loadn r3, #'i'
+        load  r4, teclaLidaRosa
+        cmp   r4, r3
+        ; jeq   DropBombRosa -- chamada de funcao que nao existe
 
-    call Delay
-    inc   r0      ; frame counter
-    jmp Loop
+        call Delay
+        inc   r0      ; frame counter -- O que eh isso aqui?
+        jmp Loop
 
-;---------------------------------------------------------
-; ROTINA GENÉRICA DE MOVIMENTO (DRY)
-; Entrada:
-;   r0 = posAtual
-;   r2 = tecla lida (já vindo de teclaLidaAzul ou Rosa)
-; Saída:
-;   r0 = novaPos
-;   r1 = posAnt
-;---------------------------------------------------------
-RecalculaPosPlayer:
-    push  r1
-    push  r3
-
-    move  r1, r0          ; r1 ← posAnt
-
-    ; — teclas do PLAYER 1 (W/A/S/D) —
-    loadn r3, #'w'        ; cima
-    cmp   r2, r3
-    jeq   RP1_UP
-    loadn r3, #'s'        ; baixo
-    cmp   r2, r3
-    jeq   RP1_DOWN
-    loadn r3, #'a'        ; esquerda
-    cmp   r2, r3
-    jeq   RP1_LEFT
-    loadn r3, #'d'        ; direita
-    cmp   r2, r3
-    jeq   RP1_RIGHT
-
-    ; — teclas do PLAYER 2 (O/L/K/Ç) —
-    loadn r3, #'o'        ; cima
-    cmp   r2, r3
-    jeq   RP2_UP
-    loadn r3, #'l'        ; baixo
-    cmp   r2, r3
-    jeq   RP2_DOWN
-    loadn r3, #'k'        ; esquerda
-    cmp   r2, r3
-    jeq   RP2_LEFT
-    loadn r3, #'ç'        ; direita
-    cmp   r2, r3
-    jeq   RP2_RIGHT
-
-    ; não é movimento → sai
-    jmp   RP_END
-
-;========= PLAYER 1 MOVES ==========
-RP1_UP:
-    loadn r3, #40
-    cmp   r0, r3
-    jle   RP_END
-    sub   r0, r0, r3
-    jmp   RP_END
-
-RP1_DOWN:
-    loadn r3, #1159
-    cmp   r0, r3
-    jgr   RP_END
-    loadn r3, #40
-    add   r0, r0, r3
-    jmp   RP_END
-
-RP1_LEFT:
-    loadn r3, #40
-    loadn r4, #0
-    mod   r3, r0, r3
-    cmp   r3, r4
-    jeq   RP_END
-    dec   r0
-    jmp   RP_END
-
-RP1_RIGHT:
-    loadn r3, #40
-    loadn r4, #39
-    mod   r3, r0, r3
-    cmp   r3, r4
-    jeq   RP_END
-    inc   r0
-    jmp   RP_END
-
-;========= PLAYER 2 MOVES ==========
-RP2_UP:   jmp   RP1_UP
-RP2_DOWN: jmp   RP1_DOWN
-RP2_LEFT: jmp   RP1_LEFT
-RP2_RIGHT:jmp   RP1_RIGHT
-
-RP_END:
-    pop   r3
-    pop   r1
-    rts
-
-
-;================================================================
-;                APAGA O PLAYER NA POSIÇÃO ANTIGA
-;================================================================
-; Usa r1 = posAntiga
-ApagaPlayer:
-    push  r2
-    push  r3
-    push  r4
-    push  r5
-
-    mov  r0, r1              ; r0 = posAnt
-    loadn r2, #0              ; base do cenário
-    add   r2, r2, r0          ; r2 = Tela1Linha0 + posAnt
-    loadn r4, #40
-    div   r3, r0, r4          ; linha = posAnt/40
-    add   r2, r2, r3          ; ajusta o deslocamento por linhas
-    loadi r5, r2              ; r5 = char original do cenário
-    outchar r5, r0            ; restaura o char do cenário
-
-    pop   r5
-    pop   r4
-    pop   r3
-    pop   r2
-    rts
-
-;================================================================
-;               DESENHA O PLAYER NA NOVA POSIÇÃO
-;================================================================
-; Usa r0 = posNova, r1 = posAntiga (para atualizar posAnt depois)
-DesenhaPlayer:
-    push  r2
-    push  r3
-
-    loadn r2, #0              ; índice do sprite/personagem
-    outchar r2, r0
-    store posAnt, r0          ; atualiza posAnt = nova pos
-    ; OBS: quem chamou deve armazenar posAnt em variáveis corretas
-
-    pop   r3
-    pop   r2
-    rts
-
-;----------------------------------
+; ;---------------------------------------------------------
+; ; ROTINA GENÉRICA DE MOVIMENTO (DRY)
+; ; Entrada:
+; ;   r0 = posAtual
+; ;   r2 = tecla lida (já vindo de teclaLidaAzul ou Rosa)
+; ; Saída:
+; ;   r0 = novaPos
+; ;   r1 = posAnt
+; ;---------------------------------------------------------
+; RecalculaPosPlayer:
+;     push  r1
+;     push  r3
+; 
+;     mov  r1, r0          ; r1 ← posAnt
+; 
+;     ; — teclas do PLAYER 1 (W/A/S/D) —
+;     loadn r3, #'w'        ; cima
+;     cmp   r2, r3
+;     jeq   RP1_UP
+;     loadn r3, #'s'        ; baixo
+;     cmp   r2, r3
+;     jeq   RP1_DOWN
+;     loadn r3, #'a'        ; esquerda
+;     cmp   r2, r3
+;     jeq   RP1_LEFT
+;     loadn r3, #'d'        ; direita
+;     cmp   r2, r3
+;     jeq   RP1_RIGHT
+; 
+;     ; — teclas do PLAYER 2 (O/L/K/Ç) —
+;     loadn r3, #'o'        ; cima
+;     cmp   r2, r3
+;     jeq   RP2_UP
+;     loadn r3, #'l'        ; baixo
+;     cmp   r2, r3
+;     jeq   RP2_DOWN
+;     loadn r3, #'k'        ; esquerda
+;     cmp   r2, r3
+;     jeq   RP2_LEFT
+;     loadn r3, #135        ; direita (c cedilha)
+;     cmp   r2, r3
+;     jeq   RP2_RIGHT
+; 
+;     ; não é movimento → sai
+;     jmp   RP_END
+; 
+; ;========= PLAYER 1 MOVES ==========
+; RP1_UP:
+;     loadn r3, #40
+;     cmp   r0, r3
+;     jle   RP_END
+;     sub   r0, r0, r3
+;     jmp   RP_END
+; 
+; RP1_DOWN:
+;     loadn r3, #1159
+;     cmp   r0, r3
+;     jgr   RP_END
+;     loadn r3, #40
+;     add   r0, r0, r3
+;     jmp   RP_END
+; 
+; RP1_LEFT:
+;     loadn r3, #40
+;     loadn r4, #0
+;     mod   r3, r0, r3
+;     cmp   r3, r4
+;     jeq   RP_END
+;     dec   r0
+;     jmp   RP_END
+; 
+; RP1_RIGHT:
+;     loadn r3, #40
+;     loadn r4, #39
+;     mod   r3, r0, r3
+;     cmp   r3, r4
+;     jeq   RP_END
+;     inc   r0
+;     jmp   RP_END
+; 
+; ;========= PLAYER 2 MOVES ==========
+; RP2_UP:   jmp   RP1_UP
+; RP2_DOWN: jmp   RP1_DOWN
+; RP2_LEFT: jmp   RP1_LEFT
+; RP2_RIGHT:jmp   RP1_RIGHT
+; 
+; RP_END:
+;     pop   r3
+;     pop   r1
+;     rts
+; 
+; 
+; ;================================================================
+; ;                APAGA O PLAYER NA POSIÇÃO ANTIGA
+; ;================================================================
+; ; Usa r1 = posAntiga
+; ApagaPlayer:
+;     push  r2
+;     push  r3
+;     push  r4
+;     push  r5
+; 
+;     mov  r0, r1              ; r0 = posAnt
+;     loadn r2, #0              ; base do cenário
+;     add   r2, r2, r0          ; r2 = Tela1Linha0 + posAnt
+;     loadn r4, #40
+;     div   r3, r0, r4          ; linha = posAnt/40
+;     add   r2, r2, r3          ; ajusta o deslocamento por linhas
+;     loadi r5, r2              ; r5 = char original do cenário
+;     outchar r5, r0            ; restaura o char do cenário
+; 
+;     pop   r5
+;     pop   r4
+;     pop   r3
+;     pop   r2
+;     rts
+; 
+; ;================================================================
+; ;               DESENHA O PLAYER NA NOVA POSIÇÃO
+; ;================================================================
+; ; Usa r0 = posNova, r1 = posAntiga (para atualizar posAnt depois)
+; DesenhaPlayer:
+;     push  r2
+;     push  r3
+; 
+;     loadn r2, #0              ; índice do sprite/personagem
+;     outchar r2, r0
+;     store posAnt, r0          ; atualiza posAnt = nova pos
+;     ; OBS: quem chamou deve armazenar posAnt em variáveis corretas
+; 
+;     pop   r3
+;     pop   r2
+;     rts
+; 
+; ;----------------------------------
 
 
 
@@ -480,22 +499,22 @@ ImprimeStr: ;  Rotina de Impresao de Mensagens:    r0 = Posicao da tela que o pr
 
 Delay:
                         ;Utiliza Push e Pop para nao afetar os Ristradores do programa principal
-    Push R0
-    Push R1
+    Push r0
+    Push r1
     
-    Loadn R1, #50  ; a
+    Loadn r1, #50  ; a
    Delay_volta2:                ;Quebrou o contador acima em duas partes (dois loops de decremento)
-    Loadn R0, #3000 ; b
+    Loadn r0, #3000 ; b
    Delay_volta: 
-    Dec R0                  ; (4*a + 6)b = 1000000  == 1 seg  em um clock de 1MHz
+    Dec r0                  ; (4*a + 6)b = 1000000  == 1 seg  em um clock de 1MHz
     JNZ Delay_volta 
-    Dec R1
+    Dec r1
     JNZ Delay_volta2
     
-    Pop R1
-    Pop R0
+    Pop r1
+    Pop r0
     
-    RTS                         ;return
+    rts                         ;return
 
 ;------------------------
 
@@ -515,14 +534,14 @@ ImprimeTela:    ;  Rotina de Impresao de Cenario na Tela Inteira
     push r4 ; protege o r4 na pilha para ser usado na subrotina
     push r5 ; protege o r4 na pilha para ser usado na subrotina
 
-    loadn R0, #0    ; posicao inicial tem que ser o comeco da tela!
-    loadn R3, #40   ; Incremento da posicao da tela!
-    loadn R4, #41   ; incremento do ponteiro das linhas da tela
-    loadn R5, #1200 ; Limite da tela!
+    loadn r0, #0    ; posicao inicial tem que ser o comeco da tela!
+    loadn r3, #40   ; Incremento da posicao da tela!
+    loadn r4, #41   ; incremento do ponteiro das linhas da tela
+    loadn r5, #1200 ; Limite da tela!
     
    ImprimeTela_Loop:
         call ImprimeStr
-        add r0, r0, r3      ; incrementaposicao para a segunda linha na tela -->  r0 = R0 + 40
+        add r0, r0, r3      ; incrementaposicao para a segunda linha na tela -->  r0 = r0 + 40
         add r1, r1, r4      ; incrementa o ponteiro para o comeco da proxima linha na memoria (40 + 1 porcausa do /0 !!) --> r1 = r1 + 41
         cmp r0, r5          ; Compara r0 com 1200
         jne ImprimeTela_Loop    ; Enquanto r0 < 1200

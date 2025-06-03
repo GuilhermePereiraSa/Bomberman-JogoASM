@@ -85,11 +85,11 @@ menu:
     ; Verifica opcao
     loadn r2, #'1'
     cmp r1, r2
-    je Jogar 
+    jeq Jogar 
 
     loadn r2, #'2'
     cmp r1, r2
-    je Sair 
+    jeq Sair 
 
     ; Se invalido, volta ao menu
 
