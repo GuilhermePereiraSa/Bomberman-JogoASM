@@ -27,8 +27,11 @@ bomba: var #1           ; Contem a posicao da bomba
 teclaLidaAzul: var #1
 teclaLidaRosa: var #1
 
+Letra: var #1		; Contem a letra que foi digitada
+
 ;********************************************************
 ;                       MENU
+; Apresenta o menu (tela inicial) do jogo
 ;********************************************************
 
 MostrarMenu:
@@ -39,48 +42,46 @@ MostrarMenu:
     ; Exibir titulo
     loadn r0, #526 ; posicao na tela
     loadn r1, #MsgTitulo
-    loadn r2, #0
+    loadn r2, #0 ; Cor da mensagem (branco)
     call ImprimeStr
 
     ; Exibir Opcao 1
     loadn r0, #605 ; posicao na tela
     loadn r1, #MsgOpcao1
-    loadn r2, #0
+    loadn r2, #0 ; cor da mensagem (branco)
     call ImprimeStr
 
     ; Exibir Opcao 2
     loadn r0, #645 ; posicao na tela
     loadn r1, #MsgOpcao2
-    loadn r2, #0
+    loadn r2, #0 ; cor da mensagem (branco)
     call ImprimeStr
-  
-    ; Loop para esperar a entrada do jogador
-    MostrarMenu_Loop:
+    
+    MostrarMenu_Entrada:        ; Procedimento que espera por uma entrada valida do usuario
+        call DigLetra
+
         ; provavel ter que fazer o numero virar char!!!
-        inchar r1
+        load r1, Letra          ; Troquei o inchar para a chamada DigLetra
         ; store r1, OpInicio -- Ordem dos argumentos errados
         store OpInicio, r1
 
-        ; Verifica opcao
-        loadn r2, #'1'
-        cmp r1, r2
+        ; Verifica opcoes
+        loadn r3, #'1'
+        loadn r4, #'2'
+
+        cmp r1, r3
         jeq main ; Sintaxe da instrucao errada, x(je) -> jeq
 
-        loadn r2, #'2'
-        cmp r1, r2
+        cmp r1, r4
         jeq Sair ; Sintaxe da instrucao errada, x(je) -> jeq
 
-        call Delay
-
-        ; Se invalido, espere pelo input
-        jmp MostrarMenu_Loop
+        jmp MostrarMenu_Entrada         ; Se for opcao invalida, nao fazer nada
 
 ;------------------------
 	
 ;********************************************************
-;                 INICIALIZA JOGO - MAIN
-; Procedimento para executado inicialmente antes de 
-; iniciar o loop principal (procedimento Loop)
+;                        MAIN
+; Procedimento principal do jogo
 ;********************************************************
 main:
     
@@ -113,18 +114,22 @@ main:
     store posRosa, r0      ; Zera Posicao Atual da ROSA
     store posAntRosa, r0   ; Zera Posicao Anterior da ROSA
     
-    loadn r0, #0            ; Contador para os Mods = 0
-    loadn r2, #0            ; Para verificar se (mod(c/10)==0
-
+; ATE AQUI O CODIGO ESTA LEGAL
 
 ;********************************************************
 ;                       CENARIO - MAIN
 ; Procedimento que instancia o cenario inicial do jogo.
 ;********************************************************
-main_cenario:
+    call ApagaTela ; Limpa a tela antes de comecar a desenhar o cenario
+
+    breakp
+
+    ; loadn r0, #0            ; Contador para os Mods = 0 -- o que isso esta fazendo aqui?
+    ; loadn r2, #0            ; Para verificar se (mod(c/10)==0 -- o que isso esta fazendo aqui?
+
     ; Definir largura do cenário (exemplo: 80 colunas)
     loadn r3, #80        ; r3 = largura da tela
-
+    
     ; Loop sobre as camadas (0..7)
     loadn r4, #0         ; r4 = índice da camada atual
     CamadaLoop:
@@ -149,19 +154,23 @@ main_cenario:
 ; --- Cálculo do endereço do caractere no mapa ---
     ; (Este exemplo assume que cada camada tem 30 linhas contíguas de largura r3.)
 
-    mov r7, r4
+    breakp
+
+    mov r7, r4               ; r7 = indice camada
     loadn r2, #30
     mul r7, r7, r2      ; r7 = r4 * 30 (número de linhas em cada camada)
     add r7, r7, r5      ; r7 = r4*30 + r5 (linha absoluta no mapa)
     mul r7, r7, r3      ; r7 = (r4*30 + r5) * largura (offset total em colunas)
     add r7, r7, r6      ; r7 = offset linear = linha*largura + coluna
+    mov r0, r7          ; r0 = posicao na tela
     loadn r1, #tela0Linha0
-    add r7, r7, r1  ; r7 aponta para o byte do caractere (ex.: base do array de camadas)
-    loadi r0, r7         ; r0 = caractere no endereço calculado
+    add r7, r7, r1      ; r7 aponta para o byte do caractere (ex.: base do array de camadas)
+    loadi r7, r7        ; r7 = caractere no endereço calculado !!!!!!!!!!!!!!!
     loadn r1, #32
-    cmp r0, r1         ; ASCII 32 = ' ' (transparente)
+    cmp r0, r1          ; ASCII 32 = ' ' (transparente)
     jeq SkipDraw        ; se for espaço, pula desenho (não sobrescreve)
-    outchar r0, r7      ; imprime caractere não-espaço na posição calculada:contentReference[oaicite:3]{index=3}
+    ; Imprime o caractere armazenado em r0 na posicao r7
+    outchar r7, r0      ; imprime caractere não-espaço na posição calculada:contentReference[oaicite:3]{index=3}
     SkipDraw:
         inc r6
         jmp ColunaLoop
@@ -556,6 +565,26 @@ ImprimeTela:    ;  Rotina de Impresao de Cenario na Tela Inteira
                 
 ;---------------------
 
+;------------------------		
+;********************************************************
+;                   DIGITE UMA LETRA
+;********************************************************
+
+DigLetra:	; Espera que uma tecla seja digitada e salva na variavel global "Letra"
+	push r0
+	push r1
+	loadn r1, #255	; Se nao digitar nada vem 255
+
+   DigLetra_Loop:
+		inchar r0			; Le o teclado, se nada for digitado = 255
+		cmp r0, r1			;compara r0 com 255
+		jeq DigLetra_Loop	; Fica lendo ate' que digite uma tecla valida
+
+	store Letra, r0			; Salva a tecla na variavel global "Letra"
+
+	pop r1
+	pop r0
+	rts
 
 
 ; completo
