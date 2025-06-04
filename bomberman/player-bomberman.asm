@@ -124,65 +124,95 @@ main:
 
     breakp
 
-    ; loadn r0, #0            ; Contador para os Mods = 0 -- o que isso esta fazendo aqui?
-    ; loadn r2, #0            ; Para verificar se (mod(c/10)==0 -- o que isso esta fazendo aqui?
-
-    ; Definir largura do cenário (exemplo: 80 colunas)
-    loadn r3, #80        ; r3 = largura da tela
-    
-    ; Loop sobre as camadas (0..7)
-    loadn r4, #0         ; r4 = índice da camada atual
-    CamadaLoop:
-        loadn r1,#8
-        cmp   r4, r1 
-        jeq   FimCenario     ; se r4 == 8, termina
-        jgr   FimCenario     ; se r4  > 8, termina
-
-        loadn r5, #0         ; r5 = índice da linha atual (0..29)
-    LinhaLoop:
-        loadn r1, #30
-        cmp   r5, r1
-        jeq   ProximaCamada  ; se r5 == 30, vai pra próxima camada
-        jgr   ProximaCamada  ; se r5  > 30, idem
-
-        loadn r6, #0         ; r6 = índice da coluna atual
-    ColunaLoop:
-        cmp   r6, r3
-        jeq   ProximaLinha   ; se r6 == r3, próxima linha
-        jgr   ProximaLinha   ; se r6  > r3, idem
-
-; --- Cálculo do endereço do caractere no mapa ---
-    ; (Este exemplo assume que cada camada tem 30 linhas contíguas de largura r3.)
-
+	loadn r1, #tela1Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #2048  			; cor cinza!
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
     breakp
 
-    mov r7, r4               ; r7 = indice camada
-    loadn r2, #30
-    mul r7, r7, r2      ; r7 = r4 * 30 (número de linhas em cada camada)
-    add r7, r7, r5      ; r7 = r4*30 + r5 (linha absoluta no mapa)
-    mul r7, r7, r3      ; r7 = (r4*30 + r5) * largura (offset total em colunas)
-    add r7, r7, r6      ; r7 = offset linear = linha*largura + coluna
-    mov r0, r7          ; r0 = posicao na tela
-    loadn r1, #tela0Linha0
-    add r7, r7, r1      ; r7 aponta para o byte do caractere (ex.: base do array de camadas)
-    loadi r7, r7        ; r7 = caractere no endereço calculado !!!!!!!!!!!!!!!
-    loadn r1, #32
-    cmp r0, r1          ; ASCII 32 = ' ' (transparente)
-    jeq SkipDraw        ; se for espaço, pula desenho (não sobrescreve)
-    ; Imprime o caractere armazenado em r0 na posicao r7
-    outchar r7, r0      ; imprime caractere não-espaço na posição calculada:contentReference[oaicite:3]{index=3}
-    SkipDraw:
-        inc r6
-        jmp ColunaLoop
-    ProximaLinha:
-        inc r5
-        jmp LinhaLoop
-    ProximaCamada:
-        inc r4
-        jmp CamadaLoop
-    
-    FimCenario: ; havia um rts fora de contexto uma que nao houve nenhuma chamada (por call) para o procedimento atual, ou seja,
-                ; simplesmente causaria um erro fatal
+	loadn r1, #tela2Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #3584  			; cor aqua!
+	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+    breakp
+
+	loadn r1, #tela3Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #2304  			; cor vermelha!
+	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+    breakp
+
+	loadn r1, #tela4Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #521  			; cor verde!
+	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+    breakp
+
+	loadn r1, #tela5Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #0      			; cor branca!
+	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+    breakp
+
+	loadn r1, #tela6Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #1280  			; cor roxa!
+	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+    breakp
+
+	loadn r1, #tela7Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #2816  			; cor amarela!
+	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+    breakp
+
+    halt
+;   ; Definir largura do cenário (exemplo: 80 colunas)
+;   loadn r3, #80        ; r3 = largura da tela
+;     
+;   ; Loop sobre as camadas (0..7)
+;   loadn r4, #0         ; r4 = índice da camada atual
+;   CamadaLoop:
+;       loadn r1,#8
+;       cmp   r4, r1 
+;       jeq   FimCenario     ; se r4 == 8, termina
+;       jgr   FimCenario     ; se r4  > 8, termina
+; 
+;       loadn r5, #0         ; r5 = índice da linha atual (0..29)
+;   LinhaLoop:
+;       loadn r1, #30
+;       cmp   r5, r1
+;       jeq   ProximaCamada  ; se r5 == 30, vai pra próxima camada
+;       jgr   ProximaCamada  ; se r5  > 30, idem
+; 
+;       loadn r6, #0         ; r6 = índice da coluna atual
+;   ColunaLoop:
+;       cmp   r6, r3
+;       jeq   ProximaLinha   ; se r6 == r3, próxima linha
+;       jgr   ProximaLinha   ; se r6  > r3, idem
+; 
+; ; --- Cálculo do endereço do caractere no mapa ---
+;     ; (Este exemplo assume que cada camada tem 30 linhas contíguas de largura r3.)
+; 
+;   breakp
+; 
+;   mov r7, r4               ; r7 = indice camada
+;   loadn r2, #30
+;   mul r7, r7, r2      ; r7 = r4 * 30 (número de linhas em cada camada)
+;   add r7, r7, r5      ; r7 = r4*30 + r5 (linha absoluta no mapa)
+;   mul r7, r7, r3      ; r7 = (r4*30 + r5) * largura (offset total em colunas)
+;   add r7, r7, r6      ; r7 = offset linear = linha*largura + coluna
+;   mov r0, r7          ; r0 = posicao na tela
+;   loadn r1, #tela0Linha0
+;   add r7, r7, r1      ; r7 aponta para o byte do caractere (ex.: base do array de camadas)
+;   loadi r7, r7        ; r7 = caractere no endereço calculado !!!!!!!!!!!!!!!
+;   loadn r1, #32
+;   cmp r0, r1          ; ASCII 32 = ' ' (transparente)
+;   jeq SkipDraw        ; se for espaço, pula desenho (não sobrescreve)
+;   ; Imprime o caractere armazenado em r0 na posicao r7
+;   outchar r7, r0      ; imprime caractere não-espaço na posição calculada:contentReference[oaicite:3]{index=3}
+;   SkipDraw:
+;       inc r6
+;       jmp ColunaLoop
+;   ProximaLinha:
+;       inc r5
+;       jmp LinhaLoop
+;   ProximaCamada:
+;       inc r4
+;       jmp CamadaLoop
 
 ;================================================================
 ; LOOP PRINCIPAL (lê teclas e chama MovePlayer)
@@ -262,7 +292,7 @@ main:
 ;     cmp   r2, r3
 ;     jeq   RP1_RIGHT
 ; 
-;     ; — teclas do PLAYER 2 (O/L/K/Ç) —
+;     ; — teclas do PLAYER 2 (O/L/K/K) —
 ;     loadn r3, #'o'        ; cima
 ;     cmp   r2, r3
 ;     jeq   RP2_UP
@@ -326,7 +356,7 @@ main:
 ; 
 ; 
 ; ;================================================================
-; ;                APAGA O PLAYER NA POSIÇÃO ANTIGA
+; ;                APAGA O PLAYER NA POSIKÃO ANTIGA
 ; ;================================================================
 ; ; Usa r1 = posAntiga
 ; ApagaPlayer:
@@ -351,7 +381,7 @@ main:
 ;     rts
 ; 
 ; ;================================================================
-; ;               DESENHA O PLAYER NA NOVA POSIÇÃO
+; ;               DESENHA O PLAYER NA NOVA POSIKÃO
 ; ;================================================================
 ; ; Usa r0 = posNova, r1 = posAntiga (para atualizar posAnt depois)
 ; DesenhaPlayer:
@@ -565,7 +595,100 @@ ImprimeTela:    ;  Rotina de Impresao de Cenario na Tela Inteira
                 
 ;---------------------
 
+;-------------------------------
+
+
+;********************************************************
+;                       IMPRIME TELA2
+;********************************************************	
+
+ImprimeTela2: 	;  Rotina de Impresao de Cenario na Tela Inteira
+		;  r1 = endereco onde comeca a primeira linha do Cenario
+		;  r2 = cor do Cenario para ser impresso
+
+	push r0	; protege o r3 na pilha para ser usado na subrotina
+	push r1	; protege o r1 na pilha para preservar seu valor
+	push r2	; protege o r1 na pilha para preservar seu valor
+	push r3	; protege o r3 na pilha para ser usado na subrotina
+	push r4	; protege o r4 na pilha para ser usado na subrotina
+	push r5	; protege o r5 na pilha para ser usado na subrotina
+	push r6	; protege o r6 na pilha para ser usado na subrotina
+
+	loadn r0, #0  	; posicao inicial tem que ser o comeco da tela!
+	loadn r3, #40  	; Incremento da posicao da tela!
+	loadn r4, #41  	; incremento do ponteiro das linhas da tela
+	loadn r5, #1200 ; Limite da tela!
+	loadn r6, #tela0Linha0	; Endereco onde comeca a primeira linha do cenario!!
+	
+   ImprimeTela2_Loop:
+		call ImprimeStr2
+		add r0, r0, r3  	; incrementaposicao para a segunda linha na tela -->  r0 = R0 + 40
+		add r1, r1, r4  	; incrementa o ponteiro para o comeco da proxima linha na memoria (40 + 1 porcausa do /0 !!) --> r1 = r1 + 41
+		add r6, r6, r4  	; incrementa o ponteiro para o comeco da proxima linha na memoria (40 + 1 porcausa do /0 !!) --> r1 = r1 + 41
+		cmp r0, r5			; Compara r0 com 1200
+		jne ImprimeTela2_Loop	; Enquanto r0 < 1200
+
+	pop r6	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+				
+;---------------------
+
+;---------------------------	
+;********************************************************
+;                   IMPRIME STRING2
+;********************************************************
+	
+ImprimeStr2:    ; Rotina de Impresao de Mensagens; Obs: a mensagem sera' impressa ate' encontrar "/0"
+    ; r0 = Posicao da tela que o primeiro caractere da mensagem sera' impresso
+    ; r1 = endereco onde comeca a mensagem
+    ; r2 = cor da mensagem.
+
+	push r0	; protege o r0 na pilha para preservar seu valor
+	push r1	; protege o r1 na pilha para preservar seu valor
+	push r2	; protege o r1 na pilha para preservar seu valor
+	push r3	; protege o r3 na pilha para ser usado na subrotina
+	push r4	; protege o r4 na pilha para ser usado na subrotina
+	push r5	; protege o r5 na pilha para ser usado na subrotina
+	push r6	; protege o r6 na pilha para ser usado na subrotina
+	
+	
+	loadn r3, #'\0'	; Criterio de parada
+	loadn r5, #' '	; Espaco em Branco
+
+    ImprimeStr2_Loop:	
+		loadi r4, r1
+		cmp r4, r3		; If (Char == \0)  vai Embora
+		jeq ImprimeStr2_Sai
+		cmp r4, r5		; If (Char == ' ')  vai Pula outchar do espaco para na apagar outros caracteres
+		jeq ImprimeStr2_Skip
+		add r4, r2, r4	; Soma a Cor
+		outchar r4, r0	; Imprime o caractere na tela
+   		storei r6, r4
+    ImprimeStr2_Skip:
+		inc r0			; Incrementa a posicao na tela
+		inc r1			; Incrementa o ponteiro da String
+		inc r6
+		jmp ImprimeStr2_Loop
+	
+    ImprimeStr2_Sai:	
+	pop r6	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+
 ;------------------------		
+
 ;********************************************************
 ;                   DIGITE UMA LETRA
 ;********************************************************
@@ -588,17 +711,17 @@ DigLetra:	; Espera que uma tecla seja digitada e salva na variavel global "Letra
 
 
 ; completo
-tela0Linha0  : string "ÇLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLÇ"
-tela0Linha1  : string "LÇHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHÇL"
-tela0Linha2  : string "LHÇLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLÇHL"
+tela0Linha0  : string "KLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLK"
+tela0Linha1  : string "LKHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHKL"
+tela0Linha2  : string "LHKLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLKHL"
 tela0Linha3  : string "LHL C              OOO           C   LHL"
 tela0Linha4  : string "LHL  C              C            C   LHL"
 tela0Linha5  : string "LHL   OOOOOOOOOOOOOOOOOOOOOOOOOOOOCCCLHL"
 tela0Linha6  : string "LHLCCCC            UU            C   LHL"
 tela0Linha7  : string "LHL   OOO   O      UU      O   OOO   LHL"
 tela0Linha8  : string "LHL   OOO                      OOO   LHL"
-tela0Linha9  : string "LHL   OOO   O        ÇÇÇ   O   OOO   LHL"
-tela0Linha10 : string "LHL   OOO           Ç   Ç      OOO   LHL"
+tela0Linha9  : string "LHL   OOO   O        KKK   O   OOO   LHL"
+tela0Linha10 : string "LHL   OOO           K   K      OOO   LHL"
 tela0Linha11 : string "LHL   OOO   O     PPPP     O   OOO   LHL"
 tela0Linha12 : string "LHL C OOO       PPPPPPPP       OOO C LHL"
 tela0Linha13 : string "LHL U OOO   O  PP PPPPPPP  O   OOO U LHL"
@@ -615,9 +738,9 @@ tela0Linha23 : string "LHL  COOOOOOOOOOOOOOOOOOOOOOOOOOOO   LHL"
 tela0Linha24 : string "LHL  COOOOOOOOOOOOOOOOOOOOOOOOOOOO   LHL"
 tela0Linha25 : string "LHL  C              C            CC  LHL"
 tela0Linha26 : string "LHL  O             OOO           O  OLHL"
-tela0Linha27 : string "LHÇLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLÇHL"
-tela0Linha28 : string "LÇHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHÇL"
-tela0Linha29 : string "ÇLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLÇ"     
+tela0Linha27 : string "LHKLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLKHL"
+tela0Linha28 : string "LKHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHKL"
+tela0Linha29 : string "KLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLK"     
 
 
 ; l - cinza
@@ -686,17 +809,17 @@ tela2Linha28 : string "  HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH  "
 tela2Linha29 : string "                                        " 
 
 ; ç - vermelho
-tela3Linha0  : string "Ç                                      Ç"
-tela3Linha1  : string " Ç                                    Ç "
-tela3Linha2  : string "  Ç                                  Ç  "
+tela3Linha0  : string "K                                      K"
+tela3Linha1  : string " K                                    K "
+tela3Linha2  : string "  K                                  K  "
 tela3Linha3  : string "                                        "
 tela3Linha4  : string "                                        "
 tela3Linha5  : string "                                        "
 tela3Linha6  : string "                                        "
 tela3Linha7  : string "                                        "
 tela3Linha8  : string "                                        "
-tela3Linha9  : string "                     ÇÇÇ                "
-tela3Linha10 : string "                    Ç   Ç               "
+tela3Linha9  : string "                     KKK                "
+tela3Linha10 : string "                    K   K               "
 tela3Linha11 : string "                                        "
 tela3Linha12 : string "                                        "
 tela3Linha13 : string "                                        "
@@ -713,9 +836,9 @@ tela3Linha23 : string "                                        "
 tela3Linha24 : string "                                        "
 tela3Linha25 : string "                                        "
 tela3Linha26 : string "                                        "
-tela3Linha27 : string "  Ç                                  Ç  "
-tela3Linha28 : string " Ç                                    Ç "
-tela3Linha29 : string "Ç                                      Ç"
+tela3Linha27 : string "  K                                  K  "
+tela3Linha28 : string " K                                    K "
+tela3Linha29 : string "K                                      K"
 
 
 ; o - parede verde
