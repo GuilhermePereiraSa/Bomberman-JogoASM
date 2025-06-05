@@ -147,7 +147,7 @@ main:
 	loadn r2, #2816  			; cor amarela!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
 
-    ; DESENHA OS JOGADORES INICIALMENTE
+    ; DESENHA OS JOGADORES INICIALMENTE (temporario?)
     ; Desenhar jogador Azul
     load r0, posAzul
     loadn r1, #0            ; Caractere do jogador
@@ -161,13 +161,11 @@ main:
     loadn r2, #3328         ; Carregar cor azul
     add r1,r1,r2
     outchar r1,r0
-   
-    breakp
-    
-    ; Teste para a colisao (depois remover)
-    loadn r0,#1
-    call DetectaColisao
+  
+    ; Teste para colisao, apagar depois
+    call AtualizaAzul
 
+    load r7,posAzul
     halt
 
     loadn r0,#0                 ; Contador de frames (motivo: preciso de objetos que atualizem mais rapido que outros,
@@ -214,48 +212,89 @@ AtualizaAzul_Input:
     push r2
 
     load r0, posAzul        ; r0 = posicao atual do jogador Azul (NÃO MUDAR NO PROCEDIMENTO)
-    inchar r1               ; r1 = Input do teclado
+    ; inchar r1               ; r1 = Input do teclado
 
-    loadn r2, #'w'
-    cmp r1,r2
-    ; jeq AtualizaAzul_Input_W        ; Tecla w (mover para cima)
-                                    ; obs. coloquei `ceq` ao inves de `jeq` aqui porque odeio procedimento 
-                                    ; que eh chamado mas nao tem rts
+    call DigLetra
+    load r1, Letra
+
+    breakp
 
     loadn r2, #'a'
     cmp r1,r2
-    ; jeq AtualizaAzul_Input_A        ; Tecla a (mover para esquerda)
-
-    loadn r2, #'s'
-    cmp r1,r2
-    ; jeq AtualizaAzul_Input_S        ; Tecla s (mover para baixo)
+    jeq AtualizaAzul_Input_A        ; Tecla a (mover para esquerda)
 
     loadn r2, #'d'
     cmp r1,r2
-    ; jeq AtualizaAzul_Input_D        ; Tecla d (mover para direita)
+    jeq AtualizaAzul_Input_D        ; Tecla d (mover para direita)
+
+    loadn r2, #'w'
+    cmp r1,r2
+    jeq AtualizaAzul_Input_W        ; Tecla w (mover para cima)
+
+    loadn r2, #'s'
+    cmp r1,r2
+    jeq AtualizaAzul_Input_S        ; Tecla s (mover para baixo)
 
     loadn r2, #'f'
     cmp r1,r2
     ; jeq AtualizaAzul_Input_Bomba    ; Tecla f (colocar bomba na posicao)
 
-    AtualizaAzul_Input_Fim:
+    AtualizaAzul_Input_Skip:
         pop r2
         pop r1
         pop r0
 
         rts
 
+    AtualizaAzul_Input_A:
+        loadn r1, #40
+        loadn r2, #0
+        mod r1, r0, r1                  ; Testa condicoes de Contorno 
+        cmp r1, r2
+        jeq AtualizaAzul_Input_Skip
+        dec r0	; pos = pos -1
+        jmp AtualizaAzul_Input_Colisao
+
+    AtualizaAzul_Input_D:
+        loadn r1, #40
+        loadn r2, #39
+        mod r1, r0, r1		; Testa condicoes de Contorno 
+        cmp r1, r2
+        jeq AtualizaAzul_Input_Skip
+        inc r0	; pos = pos + 1
+        jmp AtualizaAzul_Input_Colisao
+
     AtualizaAzul_Input_W:
         loadn r1,#40
         cmp r0,r1
-        jle AtualizaAzul_Input_Fim  ; Verifica se Azul nao pode mover para cima (posAzul < 40 -->
-                                    ; Azul esta na primeira linha)
+        jle AtualizaAzul_Input_Skip     ; Verifica se Azul nao pode mover para cima (posAzul < 40 -->
+                                        ; Azul esta na primeira linha)
 
-        sub r0,r0,r1                ; r0 = r0 - 40
+        sub r0,r0,r1                    ; pos = pos - 40
 
-        ; call DetectaColisao --> testa se nao ha nenhuma colisao
+        jmp AtualizaAzul_Input_Colisao
 
-        jmp AtualizaAzul_Input_Fim
+    AtualizaAzul_Input_S:
+        loadn r1,#1159
+        cmp r0,r1
+        jgr AtualizaAzul_Input_Colisao  ; Verifica se Azul nao pode mover para cima (posAzul < 40 -->
+                                        ; Azul esta na primeira linha)
+
+        loadn r1,#40
+        add r0,r0,r1                    ; pos = pos + 40
+
+        jmp AtualizaAzul_Input_Colisao
+
+    AtualizaAzul_Input_Colisao:
+        call DetectaColisao         ; testa se nao ha nenhuma colisao na posicao a ser usada
+
+        loadn r2,#0
+        cmp r1,r2                   ; Checa se existe colisao
+        jeq AtualizaAzul_Input_Skip
+
+        store posAzul, r0
+
+        jmp AtualizaAzul_Input_Skip
 
 
 ;********************************************************
@@ -263,10 +302,12 @@ AtualizaAzul_Input:
 ; Procedimento que cuida das interacoes com o jogador
 ; azul, como a movimentacao e a colocacao 
 ; 
-; ARGS: r0 = posicao para verificar a colisao
-;       r1 = resultado da verificacao
-;           0: sem colisao
-;           1: com colisao
+; ARGS  : r0 = posicao para verificar a colisao
+;
+; SAIDA : r1 = resultado da verificacao
+;           0: com colisao
+;           1: sem colisao
+;
 ;********************************************************
 DetectaColisao:
     push r0
@@ -275,14 +316,18 @@ DetectaColisao:
     push r4
     push r5
 
-    loadn r1,#0
+    loadn r1, #1                ; Inicia saida como sem colisao
 
-    loadn r2,#127               ; Bitmask para remover a cor do caractere do cenario
+    loadn r2, #127              ; Bitmask para remover a cor do caractere do cenario
     loadn r3, #tela0Linha0      ; r3 = Endereco para a primeira linha do cenario
-    add r4,r0,r3                ; r4 = tela0linha0 + pos(guardada em r0)
 
-    loadi r5,r4                 ; r5 = Caractere na posicao em r0
-    and r5,r5,r2                ; Aplica o bitmask em r5 para capturar o caractere armazenado (sem cor)
+    loadn r4, #40
+    div r4, r0, r4              ; r4 = pos//40 (divisao inteira) 
+    add r0, r0, r4              ; r0 = pos + pos//40
+    add r4, r0, r3              ; r4 = tela0linha0 + pos(guardada em r0)
+
+    loadi r5, r4                ; r5 = Caractere na posicao em r0
+    and r5, r5, r2              ; Aplica o bitmask em r5 para capturar o caractere armazenado (sem cor)
     
     loadn r2,#'L'
     cmp r5,r2
@@ -312,7 +357,7 @@ DetectaColisao:
     jmp DetectaColisao_Fim
 
     DetectaColisao_Sim:
-        loadn r1,#1
+        loadn r1,#0
 
     DetectaColisao_Fim:
         pop r5
@@ -320,6 +365,8 @@ DetectaColisao:
         pop r3
         pop r2
         pop r0
+
+        breakp
 
         rts
 
