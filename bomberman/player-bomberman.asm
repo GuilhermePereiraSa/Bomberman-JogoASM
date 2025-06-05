@@ -57,12 +57,11 @@ MostrarMenu:
     loadn r2, #0 ; cor da mensagem (branco)
     call ImprimeStr
     
-    MostrarMenu_Entrada:        ; Procedimento que espera por uma entrada valida do usuario
+    MostrarMenu_Escolha:        ; Procedimento que espera por uma entrada valida do usuario
         call DigLetra
 
         ; provavel ter que fazer o numero virar char!!!
-        load r1, Letra          ; Troquei o inchar para a chamada DigLetra
-        ; store r1, OpInicio -- Ordem dos argumentos errados
+        load r1, Letra
         store OpInicio, r1
 
         ; Verifica opcoes
@@ -70,12 +69,12 @@ MostrarMenu:
         loadn r4, #'2'
 
         cmp r1, r3
-        jeq main ; Sintaxe da instrucao errada, x(je) -> jeq
+        jeq main
 
         cmp r1, r4
-        jeq Sair ; Sintaxe da instrucao errada, x(je) -> jeq
+        jeq Sair
 
-        jmp MostrarMenu_Entrada         ; Se for opcao invalida, nao fazer nada
+        jmp MostrarMenu_Escolha         ; Se for opcao invalida, nao fazer nada
 
 ;------------------------
 	
@@ -105,14 +104,14 @@ main:
     ; carregar cenarios com as especificas cores;
 
     ; INICIALIZACAO DAS VARIAVEIS COM POSICAO
-    loadn r0, #1043            
+    loadn r0, #1043
     store posAzul, r0       ; Zera Posicao do AZUL
     store posAntAzul, r0    ; Zera Posicao Anterior do AZUL
 
-    
     loadn r0, #156
     store posRosa, r0      ; Zera Posicao Atual da ROSA
     store posAntRosa, r0   ; Zera Posicao Anterior da ROSA
+
     
 ;********************************************************
 ;                       CENARIO - MAIN
@@ -120,87 +119,209 @@ main:
 ;********************************************************
     call ApagaTela ; Limpa a tela antes de comecar a desenhar o cenario
 
-    breakp
-
 	loadn r1, #tela1Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #2048  			; cor cinza!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-    breakp
-
+    
 	loadn r1, #tela2Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #3584  			; cor aqua!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-    breakp
 
 	loadn r1, #tela3Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #2304  			; cor vermelha!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-    breakp
 
 	loadn r1, #tela4Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #521  			; cor verde!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-    breakp
 
 	loadn r1, #tela5Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #0      			; cor branca!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-    breakp
 
 	loadn r1, #tela6Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #1280  			; cor roxa!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-    breakp
 
 	loadn r1, #tela7Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #2816  			; cor amarela!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+
+    ; DESENHA OS JOGADORES INICIALMENTE
+    ; Desenhar jogador Azul
+    load r0, posAzul
+    loadn r1, #0            ; Caractere do jogador
+    loadn r2, #3072         ; Carregar cor azul
+    add r1,r1,r2
+    outchar r1,r0
+    
+    ; Desenhar jogador Rosa
+    load r0, posRosa
+    loadn r1, #0            ; Caractere do jogador
+    loadn r2, #3328         ; Carregar cor azul
+    add r1,r1,r2
+    outchar r1,r0
+   
     breakp
+    
+    ; Teste para a colisao (depois remover)
+    loadn r0,#1
+    call DetectaColisao
 
     halt
 
-;================================================================
-; LOOP PRINCIPAL (lê teclas e chama MovePlayer)
-;================================================================
+    loadn r0,#0                 ; Contador de frames (motivo: preciso de objetos que atualizem mais rapido que outros,
+                                ; como um contador da bomba, sla)
+    loadn r2,#0                 ; Variavel auxiliar para verificar se num_frames == 0 mod n (n: tamanho de frames de um ciclo)
+
+;********************************************************
+;                   LOOP PRINCIPAL
+;********************************************************
     Loop:
-        inchar r1
-        store teclaLidaAzul, r1
+        ; call CheckBombas --> Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
 
-        ; Porque temos duas rotinas de leitura?
-        inchar r1
-        store teclaLidaRosa, r1
+        ; call AtualizaAzul --> atualiza o jogador azul (movimento e bomba)
+        ; call AtualizaRosa --> atualiza o jogador rosa (movimento e bomba)
 
-        ; --- Azul ---
-        load r0, posAzul
-        load r1, posAntAzul
-        load r2, teclaLidaAzul
-        ; call  MovePlayer -- chamada para procedimento que nao existe
-        store posAzul, r0
-        store posAntAzul, r1
+        ; call TickBombas --> logica para fazer o delay das bombas
 
-        ; --- Bomba Azul? tecla 'e' ---
-        loadn r3, #'e'
-        load r4, teclaLidaAzul
-        cmp r4, r3
-        ; jeq DropBombAzul -- pulo para procedimento que nao existe
+        ; call AnimExplosao --> chamada para cuidar das animacoes das bombas? Antes ou depois?
 
-        ; --- Rosa ---
-        load  r0, posRosa
-        load  r1, posAntRosa
-        load  r2, teclaLidaRosa
-        ; call  MovePlayer -- chamada de procedimento que nao existe
-        store posRosa, r0
-        store posAntRosa, r1
-
-        ; --- Bomba Rosa? tecla 'i' ---
-        loadn r3, #'i'
-        load  r4, teclaLidaRosa
-        cmp   r4, r3
-        ; jeq   DropBombRosa -- chamada de funcao que nao existe
 
         call Delay
-        inc   r0      ; frame counter -- O que eh isso aqui?
+        inc r0      ; frame counter
         jmp Loop
+
+;------------------- FIM DO MAIN ------------------------
+
+
+; Procedimentos
+
+;********************************************************
+;                       AtualizaAzul
+; Procedimento que cuida das interacoes com o jogador
+; azul, como a movimentacao e a colocacao das bombas.
+;********************************************************
+AtualizaAzul:
+    call AtualizaAzul_Input
+    
+    rts
+
+
+AtualizaAzul_Input:
+    push r0
+    push r1
+    push r2
+
+    load r0, posAzul        ; r0 = posicao atual do jogador Azul (NÃO MUDAR NO PROCEDIMENTO)
+    inchar r1               ; r1 = Input do teclado
+
+    loadn r2, #'w'
+    cmp r1,r2
+    ; jeq AtualizaAzul_Input_W        ; Tecla w (mover para cima)
+                                    ; obs. coloquei `ceq` ao inves de `jeq` aqui porque odeio procedimento 
+                                    ; que eh chamado mas nao tem rts
+
+    loadn r2, #'a'
+    cmp r1,r2
+    ; jeq AtualizaAzul_Input_A        ; Tecla a (mover para esquerda)
+
+    loadn r2, #'s'
+    cmp r1,r2
+    ; jeq AtualizaAzul_Input_S        ; Tecla s (mover para baixo)
+
+    loadn r2, #'d'
+    cmp r1,r2
+    ; jeq AtualizaAzul_Input_D        ; Tecla d (mover para direita)
+
+    loadn r2, #'f'
+    cmp r1,r2
+    ; jeq AtualizaAzul_Input_Bomba    ; Tecla f (colocar bomba na posicao)
+
+    AtualizaAzul_Input_Fim:
+        pop r2
+        pop r1
+        pop r0
+
+        rts
+
+    AtualizaAzul_Input_W:
+        loadn r1,#40
+        cmp r0,r1
+        jle AtualizaAzul_Input_Fim  ; Verifica se Azul nao pode mover para cima (posAzul < 40 -->
+                                    ; Azul esta na primeira linha)
+
+        sub r0,r0,r1                ; r0 = r0 - 40
+
+        ; call DetectaColisao --> testa se nao ha nenhuma colisao
+
+        jmp AtualizaAzul_Input_Fim
+
+
+;********************************************************
+;                   DetectaColisao
+; Procedimento que cuida das interacoes com o jogador
+; azul, como a movimentacao e a colocacao 
+; 
+; ARGS: r0 = posicao para verificar a colisao
+;       r1 = resultado da verificacao
+;           0: sem colisao
+;           1: com colisao
+;********************************************************
+DetectaColisao:
+    push r0
+    push r2
+    push r3
+    push r4
+    push r5
+
+    loadn r1,#0
+
+    loadn r2,#127               ; Bitmask para remover a cor do caractere do cenario
+    loadn r3, #tela0Linha0      ; r3 = Endereco para a primeira linha do cenario
+    add r4,r0,r3                ; r4 = tela0linha0 + pos(guardada em r0)
+
+    loadi r5,r4                 ; r5 = Caractere na posicao em r0
+    and r5,r5,r2                ; Aplica o bitmask em r5 para capturar o caractere armazenado (sem cor)
+    
+    loadn r2,#'L'
+    cmp r5,r2
+    jeq DetectaColisao_Sim
+
+    loadn r2,#'H'
+    cmp r5,r2
+    jeq DetectaColisao_Sim
+
+    loadn r2,#'C'
+    cmp r5,r2
+    jeq DetectaColisao_Sim
+
+    loadn r2,#'X'
+    cmp r5,r2
+    jeq DetectaColisao_Sim
+
+    loadn r2,#'P'
+    cmp r5,r2
+    jeq DetectaColisao_Sim
+
+    loadn r2,#'K'
+    cmp r5,r2
+    jeq DetectaColisao_Sim
+
+
+    jmp DetectaColisao_Fim
+
+    DetectaColisao_Sim:
+        loadn r1,#1
+
+    DetectaColisao_Fim:
+        pop r5
+        pop r4
+        pop r3
+        pop r2
+        pop r0
+
+        rts
 
 ; ;---------------------------------------------------------
 ; ; ROTINA GENÉRICA DE MOVIMENTO (DRY)
@@ -292,35 +413,44 @@ main:
 ;     pop   r3
 ;     pop   r1
 ;     rts
-; 
-; 
+
+
+;================================================================
+;                APAGA O PLAYER NA POSIÇÃO ANTIGA
+;================================================================
+; Usa r0 = posAntiga
+ApagaPlayer:
+	push r0
+	push r1
+	push r2
+	push r3
+	push r4
+	push r5
+
+	; load r0, posAntNave	; r0 = posAnt
+	
+	; --> r2 = Tela1Linha0 + posAnt + posAnt/40  ; tem que somar posAnt/40 no ponteiro pois as linas da string terminam com /0 !!
+
+	loadn r1, #tela0Linha0	; Endereco onde comeca a primeira linha do cenario!!
+	add r2, r1, r0	; r2 = Tela1Linha0 + posAnt
+	loadn r4, #40
+	div r3, r0, r4	; r3 = posAnt/40
+	add r2, r2, r3	; r2 = Tela1Linha0 + posAnt + posAnt/40
+	
+	loadi r5, r2	; r5 = Char (Tela(posAnt))
+	
+	outchar r5, r0	; Apaga o Obj na tela com o Char correspondente na memoria do cenario
+	
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+
 ; ;================================================================
-; ;                APAGA O PLAYER NA POSIKÃO ANTIGA
-; ;================================================================
-; ; Usa r1 = posAntiga
-; ApagaPlayer:
-;     push  r2
-;     push  r3
-;     push  r4
-;     push  r5
-; 
-;     mov  r0, r1              ; r0 = posAnt
-;     loadn r2, #0              ; base do cenário
-;     add   r2, r2, r0          ; r2 = Tela1Linha0 + posAnt
-;     loadn r4, #40
-;     div   r3, r0, r4          ; linha = posAnt/40
-;     add   r2, r2, r3          ; ajusta o deslocamento por linhas
-;     loadi r5, r2              ; r5 = char original do cenário
-;     outchar r5, r0            ; restaura o char do cenário
-; 
-;     pop   r5
-;     pop   r4
-;     pop   r3
-;     pop   r2
-;     rts
-; 
-; ;================================================================
-; ;               DESENHA O PLAYER NA NOVA POSIKÃO
+; ;               DESENHA O PLAYER NA NOVA POSIÇÃO
 ; ;================================================================
 ; ; Usa r0 = posNova, r1 = posAntiga (para atualizar posAnt depois)
 ; DesenhaPlayer:
@@ -561,7 +691,7 @@ ImprimeTela2: 	;  Rotina de Impresao de Cenario na Tela Inteira
 	
    ImprimeTela2_Loop:
 		call ImprimeStr2
-		add r0, r0, r3  	; incrementaposicao para a segunda linha na tela -->  r0 = R0 + 40
+		add r0, r0, r3  	; incrementaposicao para a segunda linha na tela -->  r0 = r0 + 40
 		add r1, r1, r4  	; incrementa o ponteiro para o comeco da proxima linha na memoria (40 + 1 porcausa do /0 !!) --> r1 = r1 + 41
 		add r6, r6, r4  	; incrementa o ponteiro para o comeco da proxima linha na memoria (40 + 1 porcausa do /0 !!) --> r1 = r1 + 41
 		cmp r0, r5			; Compara r0 com 1200
@@ -649,37 +779,37 @@ DigLetra:	; Espera que uma tecla seja digitada e salva na variavel global "Letra
 	rts
 
 
-; completo
-tela0Linha0  : string "KLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLK"
-tela0Linha1  : string "LKHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHKL"
-tela0Linha2  : string "LHKLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLKHL"
-tela0Linha3  : string "LHL C              OOO           C   LHL"
-tela0Linha4  : string "LHL  C              C            C   LHL"
-tela0Linha5  : string "LHL   OOOOOOOOOOOOOOOOOOOOOOOOOOOOCCCLHL"
-tela0Linha6  : string "LHLCCCC            UU            C   LHL"
-tela0Linha7  : string "LHL   OOO   O      UU      O   OOO   LHL"
-tela0Linha8  : string "LHL   OOO                      OOO   LHL"
-tela0Linha9  : string "LHL   OOO   O        KKK   O   OOO   LHL"
-tela0Linha10 : string "LHL   OOO           K   K      OOO   LHL"
-tela0Linha11 : string "LHL   OOO   O     PPPP     O   OOO   LHL"
-tela0Linha12 : string "LHL C OOO       PPPPPPPP       OOO C LHL"
-tela0Linha13 : string "LHL U OOO   O  PP PPPPPPP  O   OOO U LHL"
-tela0Linha14 : string "LHL C OOO      PP PPPPPPP      OOO C LHL"
-tela0Linha15 : string "LHL   OOO   O   PPPPPPPP   O   OOO   LHL"
-tela0Linha16 : string "LHL   OOO         PPPP         OOO   LHL"
-tela0Linha17 : string "LHL   OOO   O              O   OOO   LHL"
-tela0Linha18 : string "LHL   OOO                      OOO   LHL"
-tela0Linha19 : string "LHL   OOO   O              O   OOO   LHL"
-tela0Linha20 : string "LHL   OOO          UU          OOO   LHL"
-tela0Linha21 : string "LHL   OOO   O      UU      O   OOO   LHL"
-tela0Linha22 : string "LHLCCC                           CCCCLHL"
-tela0Linha23 : string "LHL  COOOOOOOOOOOOOOOOOOOOOOOOOOOO   LHL"
-tela0Linha24 : string "LHL  COOOOOOOOOOOOOOOOOOOOOOOOOOOO   LHL"
-tela0Linha25 : string "LHL  C              C            CC  LHL"
-tela0Linha26 : string "LHL  O             OOO           O  OLHL"
-tela0Linha27 : string "LHKLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLKHL"
-tela0Linha28 : string "LKHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHKL"
-tela0Linha29 : string "KLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLK"     
+; completo -- tela0 eh o buffer do cenario, nao eh realmente usado no jogo
+tela0Linha0  : string "                                        "
+tela0Linha1  : string "                                        "
+tela0Linha2  : string "                                        "
+tela0Linha3  : string "                                        "
+tela0Linha4  : string "                                        "
+tela0Linha5  : string "                                        "
+tela0Linha6  : string "                                        "
+tela0Linha7  : string "                                        "
+tela0Linha8  : string "                                        "
+tela0Linha9  : string "                                        "
+tela0Linha10 : string "                                        "
+tela0Linha11 : string "                                        "
+tela0Linha12 : string "                                        "
+tela0Linha13 : string "                                        "
+tela0Linha14 : string "                                        "
+tela0Linha15 : string "                                        "
+tela0Linha16 : string "                                        "
+tela0Linha17 : string "                                        "
+tela0Linha18 : string "                                        "
+tela0Linha19 : string "                                        "
+tela0Linha20 : string "                                        "
+tela0Linha21 : string "                                        "
+tela0Linha22 : string "                                        "
+tela0Linha23 : string "                                        "
+tela0Linha24 : string "                                        "
+tela0Linha25 : string "                                        "
+tela0Linha26 : string "                                        "
+tela0Linha27 : string "                                        "
+tela0Linha28 : string "                                        "
+tela0Linha29 : string "                                        "     
 
 
 ; l - cinza
@@ -907,3 +1037,35 @@ tela7Linha26 : string "                                        "
 tela7Linha27 : string "                                        "
 tela7Linha28 : string "                                        "
 tela7Linha29 : string "                                        " 
+
+; Tela dedicada para as explosoes no mapa
+tela8Linha0  : string "                                        "
+tela8Linha1  : string "                                        "
+tela8Linha2  : string "                                        "
+tela8Linha3  : string "                                        "
+tela8Linha4  : string "                                        "
+tela8Linha5  : string "                                        "
+tela8Linha6  : string "                                        "
+tela8Linha7  : string "                                        "
+tela8Linha8  : string "                                        "
+tela8Linha9  : string "                                        "
+tela8Linha10 : string "                                        "
+tela8Linha11 : string "                                        "
+tela8Linha12 : string "                                        "
+tela8Linha13 : string "                                        "
+tela8Linha14 : string "                                        "
+tela8Linha15 : string "                                        "
+tela8Linha16 : string "                                        "
+tela8Linha17 : string "                                        "
+tela8Linha18 : string "                                        "
+tela8Linha19 : string "                                        "
+tela8Linha20 : string "                                        "
+tela8Linha21 : string "                                        "
+tela8Linha22 : string "                                        "
+tela8Linha23 : string "                                        "
+tela8Linha24 : string "                                        "
+tela8Linha25 : string "                                        "
+tela8Linha26 : string "                                        "
+tela8Linha27 : string "                                        "
+tela8Linha28 : string "                                        "
+tela8Linha29 : string "                                        " 
