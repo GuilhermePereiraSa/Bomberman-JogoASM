@@ -114,8 +114,6 @@ main:
     store posRosa, r0      ; Zera Posicao Atual da ROSA
     store posAntRosa, r0   ; Zera Posicao Anterior da ROSA
     
-; ATE AQUI O CODIGO ESTA LEGAL
-
 ;********************************************************
 ;                       CENARIO - MAIN
 ; Procedimento que instancia o cenario inicial do jogo.
@@ -131,111 +129,54 @@ main:
 
 	loadn r1, #tela2Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #3584  			; cor aqua!
-	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
     breakp
 
 	loadn r1, #tela3Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #2304  			; cor vermelha!
-	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
     breakp
 
 	loadn r1, #tela4Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #521  			; cor verde!
-	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
     breakp
 
 	loadn r1, #tela5Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #0      			; cor branca!
-	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
     breakp
 
 	loadn r1, #tela6Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #1280  			; cor roxa!
-	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
     breakp
 
 	loadn r1, #tela7Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
 	loadn r2, #2816  			; cor amarela!
-	call ImprimeTela2   		;  Rotina de Impresao de Cenario na Tela Inteira
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
     breakp
 
     halt
-;   ; Definir largura do cenário (exemplo: 80 colunas)
-;   loadn r3, #80        ; r3 = largura da tela
-;     
-;   ; Loop sobre as camadas (0..7)
-;   loadn r4, #0         ; r4 = índice da camada atual
-;   CamadaLoop:
-;       loadn r1,#8
-;       cmp   r4, r1 
-;       jeq   FimCenario     ; se r4 == 8, termina
-;       jgr   FimCenario     ; se r4  > 8, termina
-; 
-;       loadn r5, #0         ; r5 = índice da linha atual (0..29)
-;   LinhaLoop:
-;       loadn r1, #30
-;       cmp   r5, r1
-;       jeq   ProximaCamada  ; se r5 == 30, vai pra próxima camada
-;       jgr   ProximaCamada  ; se r5  > 30, idem
-; 
-;       loadn r6, #0         ; r6 = índice da coluna atual
-;   ColunaLoop:
-;       cmp   r6, r3
-;       jeq   ProximaLinha   ; se r6 == r3, próxima linha
-;       jgr   ProximaLinha   ; se r6  > r3, idem
-; 
-; ; --- Cálculo do endereço do caractere no mapa ---
-;     ; (Este exemplo assume que cada camada tem 30 linhas contíguas de largura r3.)
-; 
-;   breakp
-; 
-;   mov r7, r4               ; r7 = indice camada
-;   loadn r2, #30
-;   mul r7, r7, r2      ; r7 = r4 * 30 (número de linhas em cada camada)
-;   add r7, r7, r5      ; r7 = r4*30 + r5 (linha absoluta no mapa)
-;   mul r7, r7, r3      ; r7 = (r4*30 + r5) * largura (offset total em colunas)
-;   add r7, r7, r6      ; r7 = offset linear = linha*largura + coluna
-;   mov r0, r7          ; r0 = posicao na tela
-;   loadn r1, #tela0Linha0
-;   add r7, r7, r1      ; r7 aponta para o byte do caractere (ex.: base do array de camadas)
-;   loadi r7, r7        ; r7 = caractere no endereço calculado !!!!!!!!!!!!!!!
-;   loadn r1, #32
-;   cmp r0, r1          ; ASCII 32 = ' ' (transparente)
-;   jeq SkipDraw        ; se for espaço, pula desenho (não sobrescreve)
-;   ; Imprime o caractere armazenado em r0 na posicao r7
-;   outchar r7, r0      ; imprime caractere não-espaço na posição calculada:contentReference[oaicite:3]{index=3}
-;   SkipDraw:
-;       inc r6
-;       jmp ColunaLoop
-;   ProximaLinha:
-;       inc r5
-;       jmp LinhaLoop
-;   ProximaCamada:
-;       inc r4
-;       jmp CamadaLoop
 
 ;================================================================
 ; LOOP PRINCIPAL (lê teclas e chama MovePlayer)
 ;================================================================
     Loop:
         inchar r1
-        ; store r1, teclaLidaAzul -- Sintaxe errada
-	store teclaLidaAzul, r1
+        store teclaLidaAzul, r1
 
-	; Porque temos duas rotinas de leitura?
+        ; Porque temos duas rotinas de leitura?
         inchar r1
-        ; store r1, teclaLidaRosa
-	store teclaLidaRosa, r1
+        store teclaLidaRosa, r1
 
         ; --- Azul ---
         load r0, posAzul
         load r1, posAntAzul
         load r2, teclaLidaAzul
         ; call  MovePlayer -- chamada para procedimento que nao existe
-        ; store r0, posAzul -- sintaxe errada
-	store posAzul, r0
-        ; store r1, posAntAzul -- sintaxe errada
-	store posAntAzul, r1
+        store posAzul, r0
+        store posAntAzul, r1
 
         ; --- Bomba Azul? tecla 'e' ---
         loadn r3, #'e'
@@ -248,10 +189,8 @@ main:
         load  r1, posAntRosa
         load  r2, teclaLidaRosa
         ; call  MovePlayer -- chamada de procedimento que nao existe
-        ; store r0, posRosa -- sintaxe errada
-	store posRosa, r0
-        ; store r1, posAntRosa -- sintaxe errada
-	store posAntRosa, r1
+        store posRosa, r0
+        store posAntRosa, r1
 
         ; --- Bomba Rosa? tecla 'i' ---
         loadn r3, #'i'
