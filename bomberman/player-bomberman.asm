@@ -23,11 +23,9 @@ posAntRosa: var #1      ; Contem a posicao anterior da Rosa
 bomba: var #1           ; Contem a posicao da bomba
 ;flagBomba: var #1       ; Flag de bomba acionada
 
+teclaLidaLoop: var #1   ; Input do teclado no loop
 
-teclaLidaAzul: var #1
-teclaLidaRosa: var #1
-
-Letra: var #1		; Contem a letra que foi digitada
+Letra: var #1		; Contem a letra que foi digitada -- com delay
 
 ;********************************************************
 ;                       MENU
@@ -148,13 +146,6 @@ main:
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
 
 
-    ; DESENHA OS JOGADORES INICIALMENTE (temporario?)
-    ; Desenhar jogador Azul
-    ; load r0, posAzul
-    ; loadn r1, #0            ; Caractere do jogador
-    ; loadn r2, #3072         ; Cor azul
-    ; add r1,r1,r2            ; Carregar cor azul no caractere
-    ; outchar r1,r0
     call AtualizaAzul_Desenha
     
     ; Desenhar jogador Rosa
@@ -164,12 +155,6 @@ main:
     add r1,r1,r2            ; Carregar cor rosa no caractere
     outchar r1,r0
   
-    ; Teste para colisao, apagar depois
-    call AtualizaAzul
-
-    load r7,posAzul
-    ; halt
-
     loadn r0,#0                 ; Contador de frames (motivo: preciso de objetos que atualizem mais rapido que outros,
                                 ; como um contador da bomba, sla)
     loadn r2,#0                 ; Variavel auxiliar para verificar se num_frames == 0 mod n (n: tamanho de frames de um ciclo)
@@ -180,8 +165,11 @@ main:
     Loop:
         ; call CheckBombas --> Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
 
+        inchar r1
+        store teclaLidaLoop, r1
+
         call AtualizaAzul               ; atualiza o jogador azul (movimento e bomba)
-        ; call AtualizaRosa --> atualiza o jogador rosa (movimento e bomba)
+        call AtualizaRosa               ; atualiza o jogador rosa (movimento e bomba)
 
         ; call TickBombas --> logica para fazer o delay das bombas
 
@@ -208,11 +196,11 @@ AtualizaAzul:
 
     call AtualizaAzul_Input
     
-    load r0,posAntAzul
-    load r1,posAzul
-    cmp r0,r1
+    load r0, posAntAzul
+    load r1, posAzul
+    cmp r0, r1
     jeq AtualizaAzul_SkipDraw
-    
+   
     call AtualizaAzul_Apaga
     call AtualizaAzul_Desenha
 
@@ -233,7 +221,8 @@ AtualizaAzul_Input:
     push r2
 
     load r0, posAzul        ; r0 = posicao atual do jogador Azul (NÃO MUDAR NO PROCEDIMENTO)
-    inchar r1               ; r1 = Input do teclado
+    ; inchar r1               ; r1 = Input do teclado
+    load r1, teclaLidaLoop
 
     loadn r2, #'a'
     cmp r1,r2
@@ -285,23 +274,23 @@ AtualizaAzul_Input:
         jmp AtualizaAzul_Input_Colisao
 
     AtualizaAzul_Input_W:
-        loadn r1,#40
-        cmp r0,r1
+        loadn r1, #40
+        cmp r0, r1
         jle AtualizaAzul_Input_Skip     ; Verifica se Azul nao pode mover para cima (posAzul < 40 -->
                                         ; Azul esta na primeira linha)
 
-        sub r0,r0,r1                    ; pos = pos - 40
+        sub r0, r0, r1                  ; pos = pos - 40
 
         jmp AtualizaAzul_Input_Colisao
 
     AtualizaAzul_Input_S:
-        loadn r1,#1159
-        cmp r0,r1
+        loadn r1, #1159
+        cmp r0, r1
         jgr AtualizaAzul_Input_Skip     ; Verifica se Azul nao pode mover para cima (posAzul < 40 -->
                                         ; Azul esta na primeira linha)
 
-        loadn r1,#40
-        add r0,r0,r1                    ; pos = pos + 40
+        loadn r1, #40
+        add r0, r0, r1                  ; pos = pos + 40
 
         jmp AtualizaAzul_Input_Colisao
 
@@ -312,7 +301,7 @@ AtualizaAzul_Input:
         call DetectaColisao         ; testa se nao ha nenhuma colisao na posicao a ser usada
 
         loadn r2,#0
-        cmp r1,r2                   ; Checa se existe colisao
+        cmp r1, r2                  ; Checa se existe colisao
         jeq AtualizaAzul_Input_Skip
 
         store posAzul, r0
@@ -342,14 +331,14 @@ AtualizaAzul_Apaga:
 	; --> r2 = Tela1Linha0 + posAnt + posAnt/40  ; tem que somar posAnt/40 no ponteiro pois as linas da string terminam com /0 !!
 
 	loadn r1, #tela0Linha0	; Endereco onde comeca a primeira linha do cenario!!
-	add r2, r1, r0	; r2 = Tela1Linha0 + posAnt
+	add r2, r1, r0          ; r2 = Tela1Linha0 + posAnt
 	loadn r4, #40
-	div r3, r0, r4	; r3 = posAnt/40
-	add r2, r2, r3	; r2 = Tela1Linha0 + posAnt + posAnt/40
+	div r3, r0, r4          ; r3 = posAnt/40
+	add r2, r2, r3          ; r2 = Tela1Linha0 + posAnt + posAnt/40
 	
-	loadi r5, r2	; r5 = Char (Tela(posAnt))
+	loadi r5, r2            ; r5 = Char (Tela(posAnt))
 	
-	outchar r5, r0	; Apaga o Obj na tela com o Char correspondente na memoria do cenario
+	outchar r5, r0          ; Apaga o Obj na tela com o Char correspondente na memoria do cenario
 	
 	pop r5
 	pop r4
@@ -382,6 +371,192 @@ AtualizaAzul_Desenha:
     pop r0
     rts
 
+;********************************************************
+;                       AtualizaRosa
+; Procedimento que cuida das interacoes com o jogador
+; Rosa, como a movimentacao e a colocacao das bombas.
+;********************************************************
+AtualizaRosa:
+    push r0
+    push r1
+
+    call AtualizaRosa_Input
+    
+    load r0,posAntRosa
+    load r1,posRosa
+    cmp r0,r1
+    jeq AtualizaRosa_SkipDraw
+    
+    call AtualizaRosa_Apaga
+    call AtualizaRosa_Desenha
+
+    AtualizaRosa_SkipDraw:
+        pop r1
+        pop r0
+        rts
+
+
+;********************************************************
+;                   AtualizaRosa_Input
+; Sub-procedimento que le e age de acordo com o input 
+; do jogador
+;********************************************************
+AtualizaRosa_Input:
+    push r0
+    push r1
+    push r2
+
+    load r0, posRosa        ; r0 = posicao atual do jogador Rosa (NÃO MUDAR NO PROCEDIMENTO)
+    ; inchar r1               ; r1 = Input do teclado
+    ; mov r1, r7
+    load r1, teclaLidaLoop 
+
+    loadn r2, #'j'
+    cmp r1,r2
+    jeq AtualizaRosa_Input_J        ; Tecla a (mover para esquerda)
+
+    loadn r2, #'l'
+    cmp r1,r2
+    jeq AtualizaRosa_Input_L        ; Tecla d (mover para direita)
+
+    loadn r2, #'i'
+    cmp r1,r2
+    jeq AtualizaRosa_Input_I        ; Tecla w (mover para cima)
+
+    loadn r2, #'k'
+    cmp r1,r2
+    jeq AtualizaRosa_Input_K        ; Tecla s (mover para baixo)
+
+    loadn r2, #'h'
+    cmp r1,r2
+    ; jeq AtualizaRosa_Input_H        ; Tecla f (colocar bomba na posicao)
+
+    AtualizaRosa_Input_Skip:
+        pop r2
+        pop r1
+        pop r0
+
+        rts
+
+    AtualizaRosa_Input_J:
+        loadn r1, #40
+        loadn r2, #0
+
+        mod r1, r0, r1                  ; Testa condicoes de Contorno 
+        cmp r1, r2
+        jeq AtualizaRosa_Input_Skip
+
+        dec r0	; pos = pos -1
+        jmp AtualizaRosa_Input_Colisao
+
+    AtualizaRosa_Input_L:
+        loadn r1, #40
+        loadn r2, #39
+
+        mod r1, r0, r1		; Testa condicoes de Contorno 
+        cmp r1, r2
+        jeq AtualizaRosa_Input_Skip
+
+        inc r0	; pos = pos + 1
+        jmp AtualizaRosa_Input_Colisao
+
+    AtualizaRosa_Input_I:
+        loadn r1,#40
+        cmp r0,r1
+        jle AtualizaRosa_Input_Skip     ; Verifica se Rosa nao pode mover para cima (posRosa < 40 -->
+                                        ; Rosa esta na primeira linha)
+
+        sub r0,r0,r1                    ; pos = pos - 40
+
+        jmp AtualizaRosa_Input_Colisao
+
+    AtualizaRosa_Input_K:
+        loadn r1,#1159
+        cmp r0,r1
+        jgr AtualizaRosa_Input_Skip     ; Verifica se Rosa nao pode mover para cima (posRosa < 40 -->
+                                        ; Rosa esta na primeira linha)
+
+        loadn r1,#40
+        add r0,r0,r1                    ; pos = pos + 40
+
+        jmp AtualizaRosa_Input_Colisao
+
+    Atualiza_Input_H:
+        jmp AtualizaRosa_Input
+
+    AtualizaRosa_Input_Colisao:
+        call DetectaColisao         ; testa se nao ha nenhuma colisao na posicao a ser usada
+
+        loadn r2,#0
+        cmp r1,r2                   ; Checa se existe colisao
+        jeq AtualizaRosa_Input_Skip
+
+        store posRosa, r0
+
+        jmp AtualizaRosa_Input_Skip
+    
+
+;********************************************************
+;                   AtualizaRosa_Apaga
+; Sub-procedimento que apaga o player Rosa na posicao
+; anterior dele
+; 
+; Obs. Esse procedimento poderia ser generalizado para 
+; ambos os jogadores, mas decidi separar por questoes
+; de facilidade na leitura do codigo. 
+;********************************************************
+AtualizaRosa_Apaga:
+	push r0
+	push r1
+	push r2
+	push r3
+	push r4
+	push r5
+
+    load r0, posAntRosa
+
+	; --> r2 = Tela1Linha0 + posAnt + posAnt/40  ; tem que somar posAnt/40 no ponteiro pois as linas da string terminam com /0 !!
+
+	loadn r1, #tela0Linha0	; Endereco onde comeca a primeira linha do cenario!!
+	add r2, r1, r0	; r2 = Tela1Linha0 + posAnt
+	loadn r4, #40
+	div r3, r0, r4	; r3 = posAnt/40
+	add r2, r2, r3	; r2 = Tela1Linha0 + posAnt + posAnt/40
+	
+	loadi r5, r2	; r5 = Char (Tela(posAnt))
+	
+	outchar r5, r0	; Apaga o Obj na tela com o Char correspondente na memoria do cenario
+	
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+AtualizaRosa_Desenha:
+    push r0
+    push r1
+    push r2
+    push r3
+
+    load r0, posRosa
+    load r1, posAntRosa
+
+
+    loadn r2, #0            ; Caractere do jogador
+    loadn r3, #3328         ; Cor rosa
+    add r2,r2,r3            ; Carregar cor azul no caractere
+    outchar r2, r0
+
+    store posAntRosa, r0          ; atualiza posAntRosa = nova pos
+
+    pop r3
+    pop r2
+    pop r1
+    pop r0
+    rts
 
 ;********************************************************
 ;                   DetectaColisao
@@ -1048,3 +1223,5 @@ tela8Linha26 : string "                                        "
 tela8Linha27 : string "                                        "
 tela8Linha28 : string "                                        "
 tela8Linha29 : string "                                        " 
+
+
