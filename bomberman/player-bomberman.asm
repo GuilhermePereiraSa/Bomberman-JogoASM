@@ -147,26 +147,28 @@ main:
 	loadn r2, #2816  			; cor amarela!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
 
+
     ; DESENHA OS JOGADORES INICIALMENTE (temporario?)
     ; Desenhar jogador Azul
-    load r0, posAzul
-    loadn r1, #0            ; Caractere do jogador
-    loadn r2, #3072         ; Carregar cor azul
-    add r1,r1,r2
-    outchar r1,r0
+    ; load r0, posAzul
+    ; loadn r1, #0            ; Caractere do jogador
+    ; loadn r2, #3072         ; Cor azul
+    ; add r1,r1,r2            ; Carregar cor azul no caractere
+    ; outchar r1,r0
+    call AtualizaAzul_Desenha
     
     ; Desenhar jogador Rosa
     load r0, posRosa
     loadn r1, #0            ; Caractere do jogador
-    loadn r2, #3328         ; Carregar cor azul
-    add r1,r1,r2
+    loadn r2, #3328         ; Cor rosa
+    add r1,r1,r2            ; Carregar cor rosa no caractere
     outchar r1,r0
   
     ; Teste para colisao, apagar depois
     call AtualizaAzul
 
     load r7,posAzul
-    halt
+    ; halt
 
     loadn r0,#0                 ; Contador de frames (motivo: preciso de objetos que atualizem mais rapido que outros,
                                 ; como um contador da bomba, sla)
@@ -178,7 +180,7 @@ main:
     Loop:
         ; call CheckBombas --> Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
 
-        ; call AtualizaAzul --> atualiza o jogador azul (movimento e bomba)
+        call AtualizaAzul               ; atualiza o jogador azul (movimento e bomba)
         ; call AtualizaRosa --> atualiza o jogador rosa (movimento e bomba)
 
         ; call TickBombas --> logica para fazer o delay das bombas
@@ -201,23 +203,37 @@ main:
 ; azul, como a movimentacao e a colocacao das bombas.
 ;********************************************************
 AtualizaAzul:
+    push r0
+    push r1
+
     call AtualizaAzul_Input
     
-    rts
+    load r0,posAntAzul
+    load r1,posAzul
+    cmp r0,r1
+    jeq AtualizaAzul_SkipDraw
+    
+    call AtualizaAzul_Apaga
+    call AtualizaAzul_Desenha
+
+    AtualizaAzul_SkipDraw:
+        pop r1
+        pop r0
+        rts
 
 
+;********************************************************
+;                   AtualizaAzul_Input
+; Sub-procedimento que le e age de acordo com o input 
+; do jogador
+;********************************************************
 AtualizaAzul_Input:
     push r0
     push r1
     push r2
 
     load r0, posAzul        ; r0 = posicao atual do jogador Azul (NÃO MUDAR NO PROCEDIMENTO)
-    ; inchar r1               ; r1 = Input do teclado
-
-    call DigLetra
-    load r1, Letra
-
-    breakp
+    inchar r1               ; r1 = Input do teclado
 
     loadn r2, #'a'
     cmp r1,r2
@@ -237,7 +253,7 @@ AtualizaAzul_Input:
 
     loadn r2, #'f'
     cmp r1,r2
-    ; jeq AtualizaAzul_Input_Bomba    ; Tecla f (colocar bomba na posicao)
+    ; jeq AtualizaAzul_Input_F        ; Tecla f (colocar bomba na posicao)
 
     AtualizaAzul_Input_Skip:
         pop r2
@@ -249,18 +265,22 @@ AtualizaAzul_Input:
     AtualizaAzul_Input_A:
         loadn r1, #40
         loadn r2, #0
+
         mod r1, r0, r1                  ; Testa condicoes de Contorno 
         cmp r1, r2
         jeq AtualizaAzul_Input_Skip
+
         dec r0	; pos = pos -1
         jmp AtualizaAzul_Input_Colisao
 
     AtualizaAzul_Input_D:
         loadn r1, #40
         loadn r2, #39
+
         mod r1, r0, r1		; Testa condicoes de Contorno 
         cmp r1, r2
         jeq AtualizaAzul_Input_Skip
+
         inc r0	; pos = pos + 1
         jmp AtualizaAzul_Input_Colisao
 
@@ -277,13 +297,16 @@ AtualizaAzul_Input:
     AtualizaAzul_Input_S:
         loadn r1,#1159
         cmp r0,r1
-        jgr AtualizaAzul_Input_Colisao  ; Verifica se Azul nao pode mover para cima (posAzul < 40 -->
+        jgr AtualizaAzul_Input_Skip     ; Verifica se Azul nao pode mover para cima (posAzul < 40 -->
                                         ; Azul esta na primeira linha)
 
         loadn r1,#40
         add r0,r0,r1                    ; pos = pos + 40
 
         jmp AtualizaAzul_Input_Colisao
+
+    Atualiza_Input_F:
+        jmp AtualizaAzul_Input
 
     AtualizaAzul_Input_Colisao:
         call DetectaColisao         ; testa se nao ha nenhuma colisao na posicao a ser usada
@@ -295,12 +318,75 @@ AtualizaAzul_Input:
         store posAzul, r0
 
         jmp AtualizaAzul_Input_Skip
+    
+
+;********************************************************
+;                   AtualizaAzul_Apaga
+; Sub-procedimento que apaga o player Azul na posicao
+; anterior dele
+; 
+; Obs. Esse procedimento poderia ser generalizado para 
+; ambos os jogadores, mas decidi separar por questoes
+; de facilidade na leitura do codigo. 
+;********************************************************
+AtualizaAzul_Apaga:
+	push r0
+	push r1
+	push r2
+	push r3
+	push r4
+	push r5
+
+    load r0, posAntAzul
+
+	; --> r2 = Tela1Linha0 + posAnt + posAnt/40  ; tem que somar posAnt/40 no ponteiro pois as linas da string terminam com /0 !!
+
+	loadn r1, #tela0Linha0	; Endereco onde comeca a primeira linha do cenario!!
+	add r2, r1, r0	; r2 = Tela1Linha0 + posAnt
+	loadn r4, #40
+	div r3, r0, r4	; r3 = posAnt/40
+	add r2, r2, r3	; r2 = Tela1Linha0 + posAnt + posAnt/40
+	
+	loadi r5, r2	; r5 = Char (Tela(posAnt))
+	
+	outchar r5, r0	; Apaga o Obj na tela com o Char correspondente na memoria do cenario
+	
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+AtualizaAzul_Desenha:
+    push r0
+    push r1
+    push r2
+    push r3
+
+    load r0, posAzul
+    load r1, posAntAzul
+
+
+    loadn r2, #0            ; Caractere do jogador
+    loadn r3, #3072         ; Cor azul
+    add r2,r2,r3            ; Carregar cor azul no caractere
+    outchar r2, r0
+
+    store posAntAzul, r0          ; atualiza posAntAzul = nova pos
+
+    pop r3
+    pop r2
+    pop r1
+    pop r0
+    rts
 
 
 ;********************************************************
 ;                   DetectaColisao
-; Procedimento que cuida das interacoes com o jogador
-; azul, como a movimentacao e a colocacao 
+; Procedimento que detecta se algum bloco (objeto 
+; colidivel) existe na posicao guardada em r0
 ; 
 ; ARGS  : r0 = posicao para verificar a colisao
 ;
@@ -308,6 +394,23 @@ AtualizaAzul_Input:
 ;           0: com colisao
 ;           1: sem colisao
 ;
+; 
+; IDEIAS -- Guilherme
+; index 1 : bomba - independente se do adversario ou nao 
+; index 2 : bloco
+; index 3 : luck box
+; index 4 : caixa 
+; 
+; 
+; Memoria de Cenario necessaria - criar um vetor com todas as info da tela atual - deve ter de modificacao - caso a bomba seja explodida
+; todos os blocos sao intransponiveis
+; 
+; como faz a colisao de qualquer coisa no mapa? - verifica onde o player esta: posicao do player e onde ele vai casos:
+; : se onde o player esta agora, tiver disparo da tecla de (onde o esta o bloco) - deny - nao faça nada
+; 
+; e assim como o jogador - instanciamos cada bloco ou caixa para modificá-los aqui
+; 
+; caixaS para efeitos -> explodir ou apenas passar por cima e ter efeito?
 ;********************************************************
 DetectaColisao:
     push r0
@@ -322,19 +425,19 @@ DetectaColisao:
     loadn r3, #tela0Linha0      ; r3 = Endereco para a primeira linha do cenario
 
     loadn r4, #40
-    div r4, r0, r4              ; r4 = pos//40 (divisao inteira) 
-    add r0, r0, r4              ; r0 = pos + pos//40
+    div r4, r0, r4              ; r4 = pos//40 (divisao inteira)
+    add r0, r0, r4              ; r0 = pos + pos//40  -->  tem que somar pos//40 pois as linhas da string (tela0) possuem '\0'
     add r4, r0, r3              ; r4 = tela0linha0 + pos(guardada em r0)
 
-    loadi r5, r4                ; r5 = Caractere na posicao em r0
+    loadi r5, r4                ; r5 = Valor do cenario na posicao em r0
     and r5, r5, r2              ; Aplica o bitmask em r5 para capturar o caractere armazenado (sem cor)
     
     loadn r2,#'L'
-    cmp r5,r2
+    cmp r5,r2                   ; Colisao com bloco 'L' (parede)
     jeq DetectaColisao_Sim
 
     loadn r2,#'H'
-    cmp r5,r2
+    cmp r5,r2                   ; Colisao com o bloco 'H' (parede2)
     jeq DetectaColisao_Sim
 
     loadn r2,#'C'
@@ -366,178 +469,7 @@ DetectaColisao:
         pop r2
         pop r0
 
-        breakp
-
         rts
-
-; ;---------------------------------------------------------
-; ; ROTINA GENÉRICA DE MOVIMENTO (DRY)
-; ; Entrada:
-; ;   r0 = posAtual
-; ;   r2 = tecla lida (já vindo de teclaLidaAzul ou Rosa)
-; ; Saída:
-; ;   r0 = novaPos
-; ;   r1 = posAnt
-; ;---------------------------------------------------------
-; RecalculaPosPlayer:
-;     push  r1
-;     push  r3
-; 
-;     mov  r1, r0          ; r1 ← posAnt
-; 
-;     ; — teclas do PLAYER 1 (W/A/S/D) —
-;     loadn r3, #'w'        ; cima
-;     cmp   r2, r3
-;     jeq   RP1_UP
-;     loadn r3, #'s'        ; baixo
-;     cmp   r2, r3
-;     jeq   RP1_DOWN
-;     loadn r3, #'a'        ; esquerda
-;     cmp   r2, r3
-;     jeq   RP1_LEFT
-;     loadn r3, #'d'        ; direita
-;     cmp   r2, r3
-;     jeq   RP1_RIGHT
-; 
-;     ; — teclas do PLAYER 2 (O/L/K/K) —
-;     loadn r3, #'o'        ; cima
-;     cmp   r2, r3
-;     jeq   RP2_UP
-;     loadn r3, #'l'        ; baixo
-;     cmp   r2, r3
-;     jeq   RP2_DOWN
-;     loadn r3, #'k'        ; esquerda
-;     cmp   r2, r3
-;     jeq   RP2_LEFT
-;     loadn r3, #135        ; direita (c cedilha)
-;     cmp   r2, r3
-;     jeq   RP2_RIGHT
-; 
-;     ; não é movimento → sai
-;     jmp   RP_END
-; 
-; ;========= PLAYER 1 MOVES ==========
-; RP1_UP:
-;     loadn r3, #40
-;     cmp   r0, r3
-;     jle   RP_END
-;     sub   r0, r0, r3
-;     jmp   RP_END
-; 
-; RP1_DOWN:
-;     loadn r3, #1159
-;     cmp   r0, r3
-;     jgr   RP_END
-;     loadn r3, #40
-;     add   r0, r0, r3
-;     jmp   RP_END
-; 
-; RP1_LEFT:
-;     loadn r3, #40
-;     loadn r4, #0
-;     mod   r3, r0, r3
-;     cmp   r3, r4
-;     jeq   RP_END
-;     dec   r0
-;     jmp   RP_END
-; 
-; RP1_RIGHT:
-;     loadn r3, #40
-;     loadn r4, #39
-;     mod   r3, r0, r3
-;     cmp   r3, r4
-;     jeq   RP_END
-;     inc   r0
-;     jmp   RP_END
-; 
-; ;========= PLAYER 2 MOVES ==========
-; RP2_UP:   jmp   RP1_UP
-; RP2_DOWN: jmp   RP1_DOWN
-; RP2_LEFT: jmp   RP1_LEFT
-; RP2_RIGHT:jmp   RP1_RIGHT
-; 
-; RP_END:
-;     pop   r3
-;     pop   r1
-;     rts
-
-
-;================================================================
-;                APAGA O PLAYER NA POSIÇÃO ANTIGA
-;================================================================
-; Usa r0 = posAntiga
-ApagaPlayer:
-	push r0
-	push r1
-	push r2
-	push r3
-	push r4
-	push r5
-
-	; load r0, posAntNave	; r0 = posAnt
-	
-	; --> r2 = Tela1Linha0 + posAnt + posAnt/40  ; tem que somar posAnt/40 no ponteiro pois as linas da string terminam com /0 !!
-
-	loadn r1, #tela0Linha0	; Endereco onde comeca a primeira linha do cenario!!
-	add r2, r1, r0	; r2 = Tela1Linha0 + posAnt
-	loadn r4, #40
-	div r3, r0, r4	; r3 = posAnt/40
-	add r2, r2, r3	; r2 = Tela1Linha0 + posAnt + posAnt/40
-	
-	loadi r5, r2	; r5 = Char (Tela(posAnt))
-	
-	outchar r5, r0	; Apaga o Obj na tela com o Char correspondente na memoria do cenario
-	
-	pop r5
-	pop r4
-	pop r3
-	pop r2
-	pop r1
-	pop r0
-	rts
-
-; ;================================================================
-; ;               DESENHA O PLAYER NA NOVA POSIÇÃO
-; ;================================================================
-; ; Usa r0 = posNova, r1 = posAntiga (para atualizar posAnt depois)
-; DesenhaPlayer:
-;     push  r2
-;     push  r3
-; 
-;     loadn r2, #0              ; índice do sprite/personagem
-;     outchar r2, r0
-;     store posAnt, r0          ; atualiza posAnt = nova pos
-;     ; OBS: quem chamou deve armazenar posAnt em variáveis corretas
-; 
-;     pop   r3
-;     pop   r2
-;     rts
-; 
-; ;----------------------------------
-
-
-
-;********************************************************
-;                       COLISAO
-;********************************************************
-; index 1 : bomba - independente se do adversario ou nao 
-; index 2 : bloco
-; index 3 : luck box
-; index 4 : caixa 
-
-
-; Memoria de Cenario necessaria - criar um vetor com todas as info da tela atual - deve ter de modificacao - caso a bomba seja explodida
-; todos os blocos sao intransponiveis
-
-; como faz a colisao de qualquer coisa no mapa? - verifica onde o player esta: posicao do player e onde ele vai casos:
-; : se onde o player esta agora, tiver disparo da tecla de (onde o esta o bloco) - deny - nao faça nada
-
-; e assim como o jogador - instanciamos cada bloco ou caixa para modificá-los aqui
-
-; caixaS para efeitos -> explodir ou apenas passar por cima e ter efeito?
-
-
-
 
 
 ;---------------------------------- 
@@ -816,7 +748,7 @@ DigLetra:	; Espera que uma tecla seja digitada e salva na variavel global "Letra
 
    DigLetra_Loop:
 		inchar r0			; Le o teclado, se nada for digitado = 255
-		cmp r0, r1			;compara r0 com 255
+		cmp r0, r1			; compara r0 com 255
 		jeq DigLetra_Loop	; Fica lendo ate' que digite uma tecla valida
 
 	store Letra, r0			; Salva a tecla na variavel global "Letra"
