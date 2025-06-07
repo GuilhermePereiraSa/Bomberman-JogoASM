@@ -182,8 +182,6 @@ main:
 ;                   LOOP PRINCIPAL
 ;********************************************************
     Loop:
-        ; call CheckBombas --> Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
-
         inchar r1
         store teclaLidaLoop, r1
 
@@ -191,6 +189,8 @@ main:
         call AtualizaRosa               ; atualiza o jogador rosa (movimento e bomba)
 
         ; call TickBombas --> logica para fazer o delay das bombas
+
+        ; call CheckBombas --> Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
 
         ; call AnimExplosao --> chamada para cuidar das animacoes das bombas? Antes ou depois?
 
@@ -323,8 +323,8 @@ AtualizaAzul_Input:
         cmp r1, r2                      ; Cancela jogar bomba se nao tem bombas disponiveis
         jeq AtualizaAzul_Input_Skip
         
-        ; r2 = (maxBombaAzul - dispBombaAzul) * 2 --> Indice para inserir os dados da bomba inserida;
-        ; Preciso do '* 2' uma vez que cada item da lista tem 2 bytes
+        ; r2 = (maxBombaAzul - dispBombaAzul) * 2 --> Indice para colocar os dados da bomba inserida
+        ; obs. Preciso do '* 2' uma vez que cada item da lista tem 2 bytes
         load r2, maxBombaAzul
         sub r2, r2, r1;                 ; r2 = maxBombasAzul - dispBombaAzul
         loadn r3, #2
@@ -340,13 +340,13 @@ AtualizaAzul_Input:
         storei r3, r0                   ; bombasAzul[r2 + 1] = posAzul
 
         ; Colocar bomba no mapa de fato
-
         call ColocaBomba
 
         dec r1
         store dispBombaAzul, r1         ; Subtrai a quantidade de bombas disponiveis do jog. Azul
 
         jmp AtualizaAzul_Input_Skip
+
 
     AtualizaAzul_Input_Colisao:
         call DetectaColisao         ; testa se nao ha nenhuma colisao na posicao a ser usada
