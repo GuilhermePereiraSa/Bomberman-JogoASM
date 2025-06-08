@@ -20,11 +20,11 @@ posAntAzul: var #1      ; Contem a posicao anterior do Azul
 posRosa: var #1         ; Contem a posicao atual da Rosa - inicial = 156
 posAntRosa: var #1      ; Contem a posicao anterior da Rosa
 
-dispBombaAzul: var #1   ; Quantidade de bombas disponivel do jogador Azul
+usadoBombaAzul: var #1  ; Quantidade de bombas usado pelo jogador Azul; EM MUDANCA
 maxBombaAzul: var #1    ; Quantidade maxima de bombas do jogador Azul
 timeBombaAzul: var #1   ; Tempo para a bomba do jogador Azul explodir (mudar de valor com poderes)
 
-dispBombaRosa: var #1   ; Quantidade de bombas disponível do jogador Rosa
+usadoBombaRosa: var #1  ; Quantidade de bombas usado pelo jogador Rosa
 maxBombaRosa: var #1    ; Quantidade maxima de bombas do jogador Rosa
 timeBombaRosa: var #1   ; Tempo para a bomba do jogador Rosa explodir (mudar de valor com poderes)
 
@@ -123,15 +123,17 @@ main:
     store posRosa, r0      ; Zera Posicao Atual da ROSA
     store posAntRosa, r0   ; Zera Posicao Anterior da ROSA
 
-    loadn r0, #2
-    store dispBombaAzul, r0
+    loadn r0, #3
     store maxBombaAzul, r0
+    loadn r0, #0
+    store usadoBombaAzul, r0
     loadn r0, #10               ; Nao sei se esse valor ta legal
     store timeBombaAzul, r0
     
-    loadn r0, #1
-    store dispBombaRosa, r0
+    loadn r0, #2
     store maxBombaRosa, r0
+    loadn r0, #0
+    store usadoBombaRosa, r0
     loadn r0, #10
     store timeBombaRosa, r0
     
@@ -190,9 +192,9 @@ main:
 
         ; call TickBombas --> logica para fazer o delay das bombas
 
-        ; call CheckBombas --> Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
+        ; call CheckExplosao --> Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
 
-        ; call AnimExplosao --> chamada para cuidar das animacoes das bombas? Antes ou depois?
+        ; call AnimExplosao --> chamada para cuidar das animacoes das bombas; remove as explosoes quando terminarem
 
 
         call Delay
@@ -317,33 +319,32 @@ AtualizaAzul_Input:
         jmp AtualizaAzul_Input_Colisao
 
     AtualizaAzul_Input_F:
-        load r1, dispBombaAzul          ; r1 = Quant. de bombas disponivel (NAO MUDAR NO PROCEDIMENTO)
-        loadn r2, #0
-
-        cmp r1, r2                      ; Cancela jogar bomba se nao tem bombas disponiveis
-        jeq AtualizaAzul_Input_Skip
-        
-        ; r2 = (maxBombaAzul - dispBombaAzul) * 2 --> Indice para colocar os dados da bomba inserida
-        ; obs. Preciso do '* 2' uma vez que cada item da lista tem 2 bytes
+        load r1, usadoBombaAzul
         load r2, maxBombaAzul
-        sub r2, r2, r1;                 ; r2 = maxBombasAzul - dispBombaAzul
-        loadn r3, #2
-        mul r2, r2, r3                  ; r2 = (maxBombaAzul - dispBombaAzul) * 2
 
-        loadn r3, #bombasAzul           ; r3 = addr(bombasAzul)
-        add r3, r3, r2                  ; r3 = addr(bombasAzul[r2])
+        cmp r1, r2                      ; Cancela jogar bomba se todas as bombas estiverem no jogo
+        jeg AtualizaAzul_Input_Skip
+        
+        ; r1 = usadoBombaAzul * 2 --> Indice para colocar os dados da bomba inserida
+        ; obs. Preciso do '* 2' uma vez que cada item da lista tem 2 bytes
+        loadn r2, #2
+        mul r1, r1, r2                  ; r1 = usadoBombaAzul * 2
 
-        load r2, timeBombaAzul
-        storei r3, r2                   ; bombasAzul[r2 + 0] = timeBombaAzul
+        loadn r2, #bombasAzul           ; r2 = addr(bombasAzul)
+        add r2, r2, r1                  ; r2 = addr(bombasAzul[r1])
+
+        load r1, timeBombaAzul
+        storei r2, r1                   ; bombasAzul[r2 + 0] = timeBombaAzul
        
-        inc r3
-        storei r3, r0                   ; bombasAzul[r2 + 1] = posAzul
+        inc r2
+        storei r2, r0                   ; bombasAzul[r2 + 1] = posAzul
 
         ; Colocar bomba no mapa de fato
         call ColocaBomba
 
-        dec r1
-        store dispBombaAzul, r1         ; Subtrai a quantidade de bombas disponiveis do jog. Azul
+        load r1, usadoBombaAzul
+        inc r1
+        store usadoBombaAzul, r1         ; Subtrai a quantidade de bombas disponiveis do jog. Azul
 
         jmp AtualizaAzul_Input_Skip
 
@@ -482,7 +483,7 @@ AtualizaRosa_Input:
 
     loadn r2, #'h'
     cmp r1,r2
-    ; jeq AtualizaRosa_Input_H        ; Tecla f (colocar bomba na posicao)
+    jeq AtualizaRosa_Input_H        ; Tecla f (colocar bomba na posicao)
 
     AtualizaRosa_Input_Skip:
         pop r2
@@ -534,8 +535,35 @@ AtualizaRosa_Input:
 
         jmp AtualizaRosa_Input_Colisao
 
-    Atualiza_Input_H:
-        jmp AtualizaRosa_Input
+    AtualizaRosa_Input_H:
+        load r1, usadoBombaRosa
+        load r2, maxBombaRosa
+
+        cmp r1, r2                      ; Cancela jogar bomba se todas as bombas estiverem no jogo
+        jeg AtualizaRosa_Input_Skip
+        
+        ; r1 = usadoBombaRosa * 2 --> Indice para colocar os dados da bomba inserida
+        ; obs. Preciso do '* 2' uma vez que cada item da lista tem 2 bytes
+        loadn r2, #2
+        mul r1, r1, r2                  ; r1 = usadoBombaRosa * 2
+
+        loadn r2, #bombasRosa           ; r2 = addr(bombasRosa)
+        add r2, r2, r1                  ; r2 = addr(bombasRosa[r1])
+
+        load r1, timeBombaRosa
+        storei r2, r1                   ; bombasRosa[r2 + 0] = timeBombaRosa
+       
+        inc r2
+        storei r2, r0                   ; bombasRosa[r2 + 1] = posRosa
+
+        ; Colocar bomba no mapa de fato
+        call ColocaBomba
+
+        load r1, usadoBombaRosa
+        inc r1
+        store usadoBombaRosa, r1         ; Subtrai a quantidade de bombas disponiveis do jog. Rosa
+
+        jmp AtualizaRosa_Input_Skip
 
     AtualizaRosa_Input_Colisao:
         call DetectaColisao         ; testa se nao ha nenhuma colisao na posicao a ser usada
@@ -614,35 +642,6 @@ AtualizaRosa_Desenha:
 ;----------------------------------
 
 ;********************************************************
-;                   ColocaBomba
-; Procedimento que dada uma posicao, coloca a bomba no 
-; mapa e o insere na tela0
-; 
-; ARGS  : r0 = posicao para colocar a bomba
-;********************************************************
-ColocaBomba:
-    push r1
-    push r2
-    push r3
-
-    loadn r1, #1                ; r1 = caractere da bomba (cor branca)
-    outchar r1, r0
-
-    loadn r2, #40
-    div r2, r0, r2              ; r2 = pos//40
-    add r2, r0, r2              ; r2 = pos + pos//40
-    loadn r3, #tela0Linha0      ; r3 = addr(tela0)
-    add r3, r3, r2              ; r3 = posicao para escrever em tela0 --> r3 = addr(tela0) + pos + pos//40
-    storei r3, r1               ; Registra a bomba em tela0
-
-    pop r3
-    pop r2
-    pop r1
-    rts
-
-;----------------------------------
-
-;********************************************************
 ;                   DetectaColisao
 ; Procedimento que detecta se algum bloco (objeto 
 ; colidivel) existe na posicao guardada em r0
@@ -659,15 +658,6 @@ ColocaBomba:
 ; index 2 : bloco
 ; index 3 : luck box
 ; index 4 : caixa 
-; 
-; 
-; Memoria de Cenario necessaria - criar um vetor com todas as info da tela atual - deve ter de modificacao - caso a bomba seja explodida
-; todos os blocos sao intransponiveis
-; 
-; como faz a colisao de qualquer coisa no mapa? - verifica onde o player esta: posicao do player e onde ele vai casos:
-; : se onde o player esta agora, tiver disparo da tecla de (onde o esta o bloco) - deny - nao faça nada
-; 
-; e assim como o jogador - instanciamos cada bloco ou caixa para modificá-los aqui
 ; 
 ; caixaS para efeitos -> explodir ou apenas passar por cima e ter efeito?
 ;********************************************************
@@ -734,8 +724,80 @@ DetectaColisao:
 
         rts
 
-
 ;---------------------------------- 
+
+
+;********************************************************
+;                   ColocaBomba
+; Procedimento que dada uma posicao, coloca a bomba no 
+; mapa e o insere na tela0
+; 
+; ARGS  : r0 = posicao para colocar a bomba
+;********************************************************
+ColocaBomba:
+    push r1
+    push r2
+    push r3
+
+    loadn r1, #1                ; r1 = caractere da bomba (cor branca)
+    outchar r1, r0
+
+    loadn r2, #40
+    div r2, r0, r2              ; r2 = pos//40
+    add r2, r0, r2              ; r2 = pos + pos//40
+    loadn r3, #tela0Linha0      ; r3 = addr(tela0)
+    add r3, r3, r2              ; r3 = posicao para escrever em tela0 --> r3 = addr(tela0) + pos + pos//40
+    storei r3, r1               ; Registra a bomba em tela0
+
+    pop r3
+    pop r2
+    pop r1
+    rts
+
+;----------------------------------
+
+
+TickBombas:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+
+    loadn r0, #0                ; r0 = Iterador do loop
+    load r1, maxBombaAzul       ; r1 = Limite do loop
+    loadn r2, #bombasAzul       ; r2 = addr(BombasAzul) --> endereco do comeco da lista das bombas
+    TickBombas_LoopAzul:
+        loadi r3, r2            ; r3 = contador da bomba na posicao r0 da lista BombasAzul
+        loadn r4, #0
+
+        cmp r3, r4
+        jne TickBombas_LoopAzul_Skip    ; Caso o contador nao for zero, continuar o loop
+        
+        ; >EXPLODIR BOMBA<
+        ; - Preencher o buraco da bomba
+        ; - Incrementar dispBombaAzul
+        ; - Criar explosao
+
+
+        
+        TickBombas_LoopAzul_Skip:
+            inc r2
+            inc r2
+
+            inc r0
+            cmp r0,r1
+            jle TickBombas_LoopAzul
+
+    pop r4
+    pop r3
+    pop r2
+    pop r1
+    pop r0
+    rts
+
+;----------------------------------
+
 
 ;********************************************************
 ;                       BOMBA
