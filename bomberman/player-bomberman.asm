@@ -187,14 +187,14 @@ main:
         inchar r1
         store teclaLidaLoop, r1
 
+        ; call AnimExplosao --> chamada para cuidar das animacoes das bombas; remove as explosoes quando terminarem
+
         call AtualizaAzul               ; atualiza o jogador azul (movimento e bomba)
         call AtualizaRosa               ; atualiza o jogador rosa (movimento e bomba)
 
         call TickBombas                 ; logica para fazer o delay das bombas
 
         ; call CheckExplosao --> Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
-
-        ; call AnimExplosao --> chamada para cuidar das animacoes das bombas; remove as explosoes quando terminarem
 
 
         call Delay
