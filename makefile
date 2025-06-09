@@ -7,13 +7,19 @@ include paths.mk
 assembler_path ?= "path/to/assembler"
 simulator_path ?= "path/to/simulator"
 
+.PHONY: clear
 
 source_path := bomberman
+program_name := player-bomberman
 charmap := $(source_path)/charmap.mif
 
-simulate: $(source_path)/player-bomberman.mif $(charmap)
+simulate: $(source_path)/$(program_name).mif $(charmap)
 	$(simulator_path) $^
 
+assemble: $(source_path)/$(program_name).mif
 
-bomberman/player-bomberman.mif:
-	$(assembler_path) bomberman/player-bomberman.asm $@
+clear:
+	rm $(source_path)/$(program_name).mif
+
+$(source_path)/$(program_name).mif:
+	$(assembler_path) $(source_path)/$(program_name).asm $@
