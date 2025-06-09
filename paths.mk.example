@@ -1,0 +1,2 @@
+assembler_path := "path/to/assembler"
+simulator_path := "path/to/simulator"
