@@ -152,6 +152,7 @@ main:
 
         ; call AnimExplosao --> chamada para cuidar das animacoes das bombas; remove as explosoes quando terminarem
 
+        
         call AtualizaAzul               ; atualiza o jogador azul (movimento e bomba)
         call AtualizaRosa               ; atualiza o jogador rosa (movimento e bomba)
 
@@ -362,7 +363,7 @@ AtualizaAzul_Input:
         
         loadn r3, #0
         cmp r2, r3
-        jeq AtualizaAzul_Input_Skip     ; Cancela jogar bomba se tiver colisao na posicao
+        jne AtualizaAzul_Input_Skip     ; Cancela jogar bomba se tiver colisao na posicao
 
         ; r1 = usadoBombaAzul * 4 --> Indice para colocar os dados da bomba inserida
         ; obs. Preciso do '* 4' uma vez que cada item da lista tem 4 bytes
@@ -401,7 +402,7 @@ AtualizaAzul_Input:
 
         loadn r2,#0
         cmp r1, r2
-        jeq AtualizaAzul_Input_Skip     ; Se existir colisao, nao atualizar a posicao
+        jne AtualizaAzul_Input_Skip     ; Se existir colisao, nao atualizar a posicao
         
         ; Caso contrario, atualizar a posicao
         store posAzul, r0
@@ -500,7 +501,6 @@ AtualizaRosa_Input:
     push r0
     push r1
     push r2
-    push r3
 
     load r0, posRosa            ; r0 = posicao atual do jogador Rosa (NÃO MUDAR NO PROCEDIMENTO)
     load r1, teclaLidaLoop      ; r1 = Input do teclado no frame
@@ -590,7 +590,7 @@ AtualizaRosa_Input:
         
         loadn r3, #0
         cmp r2, r3
-        jeq AtualizaRosa_Input_Skip     ; Cancela jogar bomba se tiver colisao na posicao
+        jne AtualizaRosa_Input_Skip     ; Cancela jogar bomba se tiver colisao na posicao
         
         ; r1 = usadoBombaRosa * 4 --> Indice para colocar os dados da bomba inserida
         ; obs. Preciso do '* 4' uma vez que cada item da lista tem 4 bytes
@@ -630,7 +630,7 @@ AtualizaRosa_Input:
 
         loadn r2,#0
         cmp r1, r2
-        jeq AtualizaRosa_Input_Skip     ; Se existir colisao, nao atualizar a posicao
+        jne AtualizaRosa_Input_Skip     ; Se existir colisao, nao atualizar a posicao
 
         ; Caso contrario, atualizar a posicao
         store posRosa, r0
@@ -701,8 +701,11 @@ AtualizaRosa_Desenha:
 ; ARGS  : r0 = posicao para verificar a colisao
 ;
 ; SAIDA : r1 = resultado da verificacao
-;           0: com colisao
-;           1: sem colisao
+;           0: sem colisao
+;           1: com colisao (solido)
+;           2: com colisao (bloco destrutivel)
+;           3: com colisao (luck box)
+;           4: com colisao (bomba)
 ;
 ; 
 ; IDEIAS -- Guilherme
@@ -718,7 +721,7 @@ DetectaColisao:
     push r2
     push r3
 
-    loadn r1, #1                ; Inicia saida como sem colisao
+    loadn r1, #0                ; Inicia saida como sem colisao
 
     loadn r2, #127              ; Bitmask para remover a cor do caractere do cenario
 
@@ -759,7 +762,7 @@ DetectaColisao:
     jmp DetectaColisao_Fim
 
     DetectaColisao_Sim:
-        loadn r1, #0
+        loadn r1, #1
 
     DetectaColisao_Fim:
         pop r3
