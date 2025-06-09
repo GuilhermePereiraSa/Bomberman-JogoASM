@@ -13,27 +13,41 @@ MsgOpcao1: string "1 - JOGAR"
 MsgOpcao2: string "2 - SAIR"
 OpInicio: var #1 ; guarda a escolha do jogador
 
-
+; Variaveis de posicao
 posAzul: var #1         ; Contem a posicao atual do Azul - inicial = 1043
 posAntAzul: var #1      ; Contem a posicao anterior do Azul
 
 posRosa: var #1         ; Contem a posicao atual da Rosa - inicial = 156
 posAntRosa: var #1      ; Contem a posicao anterior da Rosa
 
+; Variaveis de poderes dos jogadores -- bitmask dos diversos poderes
+efeitosAzul: var #1
+efeitosRosa: var #1
+
+; Variaveis de colocar bombas
 usadoBombaAzul: var #1  ; Quantidade de bombas usado pelo jogador Azul; EM MUDANCA
 maxBombaAzul: var #1    ; Quantidade maxima de bombas do jogador Azul
-timeBombaAzul: var #1   ; Tempo para a bomba do jogador Azul explodir (mudar de valor com poderes)
 
 usadoBombaRosa: var #1  ; Quantidade de bombas usado pelo jogador Rosa
 maxBombaRosa: var #1    ; Quantidade maxima de bombas do jogador Rosa
+
+; Variaveis das propriedades das bombas
+timeBombaAzul: var #1   ; Tempo para a bomba do jogador Azul explodir (mudar de valor com poderes)
+rangeBombaAzul: var #1  ; Alcance das bombas do jogador Azul
+
 timeBombaRosa: var #1   ; Tempo para a bomba do jogador Rosa explodir (mudar de valor com poderes)
+rangeBombaRosa: var #1  ; Alcance das bombas do jogador Rosa
+
 
 limBombas: var #1       ; Maximo de bombas que um jogador pode ter (= 5)
 static limBombas, #5
 
-; Array com a posicao e o timer das bombas; cada item tem 2 bytes, entao o tamanho do array eh: 2 * maxBombas
-bombasAzul: var #10 
-bombasRosa: var #10
+; Array com as bombas em jogo de cada jogador
+; Cada item do array eh composto da seguinte forma:
+; | contador (1 byte) | posicao (1 byte) | raio de explosao (1 byte) | efeitos (1 byte)
+; Cada item tem 4 bytes, entao o tamanho do array eh: 4 * maxBombas
+bombasAzul: var #20
+bombasRosa: var #20
 
 
 teclaLidaLoop: var #1   ; Input do teclado no loop
@@ -94,27 +108,7 @@ MostrarMenu:
 ; Procedimento principal do jogo
 ;********************************************************
 main:
-    
-    ; 0 branco                          0000 0000
-    ; 256 marrom                        0001 0000
-    ; 512 verde                         0010 0000
-    ; 768 oliva                         0011 0000
-    ; 1024 azul marinho                 0100 0000
-    ; 1280 roxo                         0101 0000
-    ; 1536 teal                         0110 0000
-    ; 1792 prata                        0111 0000
-    ; 2048 cinza                        1000 0000
-    ; 2304 vermelho                     1001 0000
-    ; 2560 lima                         1010 0000
-    ; 2816 amarelo                      1011 0000
-    ; 3072 azul                         1100 0000
-    ; 3328 rosa                         1101 0000
-    ; 3584 aqua                         1110 0000
-    ; 3840 branco                       1111 0000
-
-    ; carregar cenarios com as especificas cores;
-
-    ; INICIALIZACAO DAS VARIAVEIS COM POSICAO
+    ; INICIALIZACAO DAS VARIAVEIS
     loadn r0, #1043
     store posAzul, r0       ; Zera Posicao do AZUL
     store posAntAzul, r0    ; Zera Posicao Anterior do AZUL
@@ -125,54 +119,23 @@ main:
 
     loadn r0, #3
     store maxBombaAzul, r0
+    store maxBombaRosa, r0
+
     loadn r0, #0
     store usadoBombaAzul, r0
+    store usadoBombaRosa, r0
+
     loadn r0, #500               ; Nao sei se esse valor ta legal
     store timeBombaAzul, r0
-    
-    loadn r0, #2
-    store maxBombaRosa, r0
-    loadn r0, #0
-    store usadoBombaRosa, r0
-    loadn r0, #500
     store timeBombaRosa, r0
-    
-;********************************************************
-;                       CENARIO - MAIN
-; Procedimento que instancia o cenario inicial do jogo.
-;********************************************************
-    call ApagaTela ; Limpa a tela antes de comecar a desenhar o cenario
 
-	loadn r1, #tela1Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
-	loadn r2, #2048  			; cor cinza!
-	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-    
-	loadn r1, #tela2Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
-	loadn r2, #3584  			; cor aqua!
-	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+    loadn r0, #3
+    store rangeBombaAzul, r0
+    store rangeBombaRosa, r0
 
-	loadn r1, #tela3Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
-	loadn r2, #2304  			; cor vermelha!
-	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+    call ImprimirCenario
 
-	loadn r1, #tela4Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
-	loadn r2, #521  			; cor verde!
-	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-
-	loadn r1, #tela5Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
-	loadn r2, #0      			; cor branca!
-	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-
-	loadn r1, #tela6Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
-	loadn r2, #1280  			; cor roxa!
-	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-
-	loadn r1, #tela7Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
-	loadn r2, #2816  			; cor amarela!
-	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
-
-    
-    ; Desenha os jogadores
+    ; Desenha os jogadores na tela
     call AtualizaAzul_Desenha
     call AtualizaRosa_Desenha   
   
@@ -204,7 +167,72 @@ main:
 ;------------------- FIM DO MAIN ------------------------
 
 
-; Procedimentos
+; PROCEDIMENTOS
+
+;********************************************************
+;                   ImprimeCenario
+; Procedimento que imprime um novo cenario na tela e 
+; salva os resultados em tela0.
+; 
+; 0 branco                          0000 0000
+; 256 marrom                        0001 0000
+; 512 verde                         0010 0000
+; 768 oliva                         0011 0000
+; 1024 azul marinho                 0100 0000
+; 1280 roxo                         0101 0000
+; 1536 teal                         0110 0000
+; 1792 prata                        0111 0000
+; 2048 cinza                        1000 0000
+; 2304 vermelho                     1001 0000
+; 2560 lima                         1010 0000
+; 2816 amarelo                      1011 0000
+; 3072 azul                         1100 0000
+; 3328 rosa                         1101 0000
+; 3584 aqua                         1110 0000
+; 3840 branco                       1111 0000
+; 
+; carregar cenarios com as especificas cores;
+;********************************************************
+ImprimirCenario:
+    push r1
+    push r2
+
+    call ApagaTela ; Limpa a tela antes de comecar a desenhar o cenario
+
+	loadn r1, #tela1Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #2048  			; cor cinza!
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+    
+	loadn r1, #tela2Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #3584  			; cor aqua!
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+
+	loadn r1, #tela3Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #2304  			; cor vermelha!
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+
+	loadn r1, #tela4Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #521  			; cor verde!
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+
+	loadn r1, #tela5Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #0      			; cor branca!
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+
+	loadn r1, #tela6Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #1280  			; cor roxa!
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+
+	loadn r1, #tela7Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
+	loadn r2, #2816  			; cor amarela!
+	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
+
+    pop r2
+    pop r1
+    rts
+
+;----------------------------------
+
 
 ;********************************************************
 ;                   AtualizaAzul
@@ -215,13 +243,15 @@ AtualizaAzul:
     push r0
     push r1
 
-    call AtualizaAzul_Input
+    call AtualizaAzul_Input         ; Trata do input do jogador -- movimentacao e colocar bombas
     
     load r0, posAntAzul
     load r1, posAzul
+
     cmp r0, r1
-    jeq AtualizaAzul_SkipDraw
-   
+    jeq AtualizaAzul_SkipDraw       ; Se a posicao nao mudar, nao redesenhar o jogador
+    
+    ; Caso contrario, redesenhar o jogador
     call AtualizaAzul_Apaga
     call AtualizaAzul_Desenha
 
@@ -241,7 +271,6 @@ AtualizaAzul_Input:
     push r1
     push r2
     push r3
-    push r4
 
     load r0, posAzul            ; r0 = posicao atual do jogador Azul (NÃO MUDAR NO PROCEDIMENTO)
     load r1, teclaLidaLoop      ; r1 = Input do teclado no frame
@@ -267,13 +296,13 @@ AtualizaAzul_Input:
     jeq AtualizaAzul_Input_F        ; Tecla f (colocar bomba na posicao)
 
     AtualizaAzul_Input_Skip:
-        pop r4
         pop r3
         pop r2
         pop r1
         pop r0
 
         rts
+
 
     AtualizaAzul_Input_A:
         loadn r1, #40
@@ -326,18 +355,19 @@ AtualizaAzul_Input:
         jeg AtualizaAzul_Input_Skip
         
         push r1
-        call DetectaColisao
-        mov r2, r1
+        ; r0 = posicao; (saida) r1 = resultado
+        call DetectaColisao             ; Verifica se existe um bloco colidindo na posicao do jogador Azul -- caso o jogador estiver em cima de uma bomba
+        mov r2, r1                      ; r2 = resultado da colisao
         pop r1
         
         loadn r3, #0
         cmp r2, r3
         jeq AtualizaAzul_Input_Skip     ; Cancela jogar bomba se tiver colisao na posicao
 
-        ; r1 = usadoBombaAzul * 2 --> Indice para colocar os dados da bomba inserida
-        ; obs. Preciso do '* 2' uma vez que cada item da lista tem 2 bytes
-        loadn r2, #2
-        mul r1, r1, r2                  ; r1 = usadoBombaAzul * 2
+        ; r1 = usadoBombaAzul * 4 --> Indice para colocar os dados da bomba inserida
+        ; obs. Preciso do '* 4' uma vez que cada item da lista tem 4 bytes
+        loadn r2, #4
+        mul r1, r1, r2                  ; r1 = usadoBombaAzul * 4
 
         loadn r2, #bombasAzul           ; r2 = addr(bombasAzul)
         add r2, r2, r1                  ; r2 = addr(bombasAzul[r1])
@@ -348,24 +378,32 @@ AtualizaAzul_Input:
         inc r2
         storei r2, r0                   ; bombasAzul[r2 + 1] = posAzul
 
-        ; Colocar bomba no mapa de fato
+        inc r2
+        load r1, rangeBombaAzul         ; r1 = rangeBombaAzul
+        storei r2, r1                   ; bombasAzul[r2 + 2] = rangeBombaAzul
+
+        ; inc r2
+        ; colocar em r2 os efeitos especiais da bomba
+
+        ; Colocar bomba no mapa de fato; r0 = posicao da bomba
         call ColocaBombaMapa
 
         load r1, usadoBombaAzul
         inc r1
-        store usadoBombaAzul, r1         ; Subtrai a quantidade de bombas disponiveis do jog. Azul
+        store usadoBombaAzul, r1         ; Incrementa a variavel de quantidade de bombas no mapa do jogador Azul
 
         jmp AtualizaAzul_Input_Skip
 
 
     AtualizaAzul_Input_Colisao:
-        call DetectaColisao         ; testa se nao ha nenhuma colisao na posicao a ser usada
-                                    ; Retorna resultado em r1
+        call DetectaColisao             ; testa se nao ha nenhuma colisao na posicao a ser usada
+                                        ; Retorna resultado em r1
 
         loadn r2,#0
-        cmp r1, r2                  ; Checa se existe colisao
-        jeq AtualizaAzul_Input_Skip
-
+        cmp r1, r2
+        jeq AtualizaAzul_Input_Skip     ; Se existir colisao, nao atualizar a posicao
+        
+        ; Caso contrario, atualizar a posicao
         store posAzul, r0
 
         jmp AtualizaAzul_Input_Skip
@@ -388,8 +426,8 @@ AtualizaAzul_Apaga:
     load r0, posAntAzul
 
     push r0
-    call CalculaPosTela0
-    mov r1, r0
+    call CalculaPosTela0    ; r0 = pos + pos//40
+    mov r1, r0              ; r1 = pos + pos//40
     pop r0
     
 	loadi r2, r1            ; r5 = Char (Tela(posAnt))
@@ -413,7 +451,7 @@ AtualizaAzul_Desenha:
     loadn r2, #0            ; Caractere do jogador
     loadn r3, #3072         ; Cor azul
     add r2,r2,r3            ; Carregar cor azul no caractere
-    outchar r2, r0
+    outchar r2, r0          ; Desenhar o jogador na tela
 
     store posAntAzul, r0          ; atualiza posAntAzul = nova pos
 
@@ -422,6 +460,8 @@ AtualizaAzul_Desenha:
     pop r1
     pop r0
     rts
+
+;----------------------------------
 
 
 ;********************************************************
@@ -433,13 +473,15 @@ AtualizaRosa:
     push r0
     push r1
 
-    call AtualizaRosa_Input
+    call AtualizaRosa_Input         ; Trata do input do jogador -- movimentacao e colocar bombas
     
-    load r0,posAntRosa
-    load r1,posRosa
+    load r0, posAntRosa
+    load r1, posRosa
+    
     cmp r0,r1
-    jeq AtualizaRosa_SkipDraw
+    jeq AtualizaRosa_SkipDraw       ; Se a posicao nao mudar, nao redesenhar o jogador
     
+    ; Caso contrario, redesenhar o jogador
     call AtualizaRosa_Apaga
     call AtualizaRosa_Desenha
 
@@ -458,11 +500,10 @@ AtualizaRosa_Input:
     push r0
     push r1
     push r2
+    push r3
 
-    load r0, posRosa        ; r0 = posicao atual do jogador Rosa (NÃO MUDAR NO PROCEDIMENTO)
-    ; inchar r1               ; r1 = Input do teclado
-    ; mov r1, r7
-    load r1, teclaLidaLoop 
+    load r0, posRosa            ; r0 = posicao atual do jogador Rosa (NÃO MUDAR NO PROCEDIMENTO)
+    load r1, teclaLidaLoop      ; r1 = Input do teclado no frame
 
     loadn r2, #'j'
     cmp r1,r2
@@ -542,17 +583,18 @@ AtualizaRosa_Input:
         jeg AtualizaRosa_Input_Skip
 
         push r1
-        call DetectaColisao
-        mov r2, r1
+        ; r0 = posicao; (saida) r1 = resultado
+        call DetectaColisao             ; Verifica se existe um bloco colidindo na posicao do jogador Azul -- caso o jogador estiver em cima de uma bomba
+        mov r2, r1                      ; r2 = resultado da colisao
         pop r1
         
         loadn r3, #0
         cmp r2, r3
         jeq AtualizaRosa_Input_Skip     ; Cancela jogar bomba se tiver colisao na posicao
         
-        ; r1 = usadoBombaRosa * 2 --> Indice para colocar os dados da bomba inserida
-        ; obs. Preciso do '* 2' uma vez que cada item da lista tem 2 bytes
-        loadn r2, #2
+        ; r1 = usadoBombaRosa * 4 --> Indice para colocar os dados da bomba inserida
+        ; obs. Preciso do '* 4' uma vez que cada item da lista tem 4 bytes
+        loadn r2, #4
         mul r1, r1, r2                  ; r1 = usadoBombaRosa * 2
 
         loadn r2, #bombasRosa           ; r2 = addr(bombasRosa)
@@ -564,22 +606,33 @@ AtualizaRosa_Input:
         inc r2
         storei r2, r0                   ; bombasRosa[r2 + 1] = posRosa
 
-        ; Colocar bomba no mapa de fato
+        inc r2
+        load r1, rangeBombaRosa         ; r1 = rangeBombaRosa
+        storei r2, r1                   ; bombasRosa[r2 + 2] = rangeBombaRosa
+
+        ; inc r2
+        ; colocar em r2 os efeitos especiais da bomba
+
+
+        ; Colocar bomba no mapa de fato; r0 = posicao da bomba
         call ColocaBombaMapa
 
         load r1, usadoBombaRosa
         inc r1
-        store usadoBombaRosa, r1         ; Subtrai a quantidade de bombas disponiveis do jog. Rosa
+        store usadoBombaRosa, r1        ; Incrementa a variavel de quantidade de bombas no mapa do jogador Rosa
 
         jmp AtualizaRosa_Input_Skip
 
+
     AtualizaRosa_Input_Colisao:
-        call DetectaColisao         ; testa se nao ha nenhuma colisao na posicao a ser usada
+        call DetectaColisao             ; testa se nao ha nenhuma colisao na posicao a ser usada
+                                        ; Retorna resultado em r1
 
         loadn r2,#0
-        cmp r1,r2                   ; Checa se existe colisao
-        jeq AtualizaRosa_Input_Skip
+        cmp r1, r2
+        jeq AtualizaRosa_Input_Skip     ; Se existir colisao, nao atualizar a posicao
 
+        ; Caso contrario, atualizar a posicao
         store posRosa, r0
 
         jmp AtualizaRosa_Input_Skip
@@ -602,8 +655,8 @@ AtualizaRosa_Apaga:
     load r0, posAntRosa
 
     push r0
-    call CalculaPosTela0
-    mov r1, r0
+    call CalculaPosTela0    ; r0 = pos + pos//40
+    mov r1, r0              ; r1 = pos + pos//40
     pop r0
     
 	loadi r2, r1            ; r5 = Char (Tela(posAnt))
@@ -627,7 +680,7 @@ AtualizaRosa_Desenha:
     loadn r2, #0            ; Caractere do jogador
     loadn r3, #3328         ; Cor rosa
     add r2,r2,r3            ; Carregar cor azul no caractere
-    outchar r2, r0
+    outchar r2, r0          ; Desenhar o jogador na tela
 
     store posAntRosa, r0          ; atualiza posAntRosa = nova pos
 
@@ -638,6 +691,7 @@ AtualizaRosa_Desenha:
     rts
 
 ;----------------------------------
+
 
 ;********************************************************
 ;                   DetectaColisao
@@ -705,7 +759,7 @@ DetectaColisao:
     jmp DetectaColisao_Fim
 
     DetectaColisao_Sim:
-        loadn r1,#0
+        loadn r1, #0
 
     DetectaColisao_Fim:
         pop r3
@@ -750,19 +804,24 @@ ColocaBombaMapa:
 ;********************************************************
 ;                       TickBombas
 ; Procedimento que decrementa os contadores das bombas
+; 
+; Descricao geral: o procedimento itera pelos arrays 
+; bombasAzul e bombasRosa e decrementa o contador de cada
+; bomba. Se o contador chega em 0, entao a bomba eh 
+; explodida
 ;********************************************************
 TickBombas:
     push r0
     push r1
     push r2
 
-    loadn r1, #usadoBombaAzul   ; r1 = Limite do loop
+    loadn r1, #usadoBombaAzul   ; r1 = Limite do loop (endereco)
     loadn r2, #bombasAzul       ; r2 = addr(BombasAzul) --> endereco do comeco da lista das bombas
-    call TickBombas_Generico
+    call TickBombas_Generico	; Iteracao pelo bombasAzul
 
-    loadn r1, #usadoBombaRosa   ; r1 = Limite do loop
+    loadn r1, #usadoBombaRosa   ; r1 = Limite do loop (endereco)
     loadn r2, #bombasRosa       ; r2 = addr(BombasAzul) --> endereco do comeco da lista das bombas
-    call TickBombas_Generico
+    call TickBombas_Generico	; Iteracao pelo bombasRosa
 
     pop r2
     pop r1
@@ -785,6 +844,21 @@ TickBombas:
 ; 
 ; obs. os enderecos de r1 e r2 devem pertencer ao mesmo
 ; jogador
+; 
+; IDEIAS - Guilherme
+; se caixa: caso a bomba exploda 
+;   -> e caixaS estiver numa regiao proxima e jogador NAO atingido (proximo) -> caixaS tem chance randomica (numeros, exemplo: se par entao sorteia dnv pra ver qual item) 
+;       (se impar, nao faz nada)
+;             faz o item aparecer no lugar onde foi explodida a caixa;
+;   
+;   -> (jogador atingido) 
+;     -> jogador de OUTRO numero sai como vitorioso apos um delay; conta apenas o primeiro que morrer; flagzinha pra isso
+;
+; 
+; bomba -> explosao em + -> se caixa estiver em +, explode normal
+; bomba -> se caixaS -> explode normal, chance de item
+; 
+; bomba alteracoes: caso colocamos efeitos especiais
 ;********************************************************
 TickBombas_Generico:
     push r0
@@ -802,10 +876,10 @@ TickBombas_Generico:
         cmp r0, r1
         jeg TickBombas_Generico_Fim     ; Condicao de saida -- r0 >= r1
 
-        loadn r5, #2
-        mul r4, r0, r5                  ; r4 = 2 * iterador
-        add r4, r4, r2                  ; r4 = addr(bombasAzul) + 2 * iterador  (QUERO SALVAR O ENDERECO, NAO MUDE)
-        loadi r3, r4                    ; r3 = bombasAzul[2 * iterador] -- Carrega o contador da (iterador)-ezima bomba em bombasAzul
+        loadn r5, #4
+        mul r4, r0, r5                  ; r4 = 4 * iterador
+        add r4, r4, r2                  ; r4 = addr(bombasAzul) + 4 * iterador  (QUERO SALVAR O ENDERECO, NAO MUDE)
+        loadi r3, r4                    ; r3 = bombasAzul[4 * iterador] -- Carrega o contador da (iterador)-ezima bomba em bombasAzul
 
         dec r3 
         storei r4, r3                   ; Decrementa o contador e salva na memoria
@@ -824,8 +898,8 @@ TickBombas_Generico:
         loadi r5, r3            ; Carrega a posicao da r0-ezima bomba em bombasAzul; r5 = bombasAzul[2 * iterador + 1]
 
         push r0
-        mov r0, r5
-        call ApagaBloco
+        mov r0, r5		; r0 = bombaPos
+        call ApagaBloco		; Apaga a bomba na posicao correspondente em tela0
         pop r0
 
         ; ***********************************************
@@ -845,12 +919,12 @@ TickBombas_Generico:
         jeg TickBombas_Generico_Skip    ; Se eu estiver no fim da lista, nao faco nada
 
         ; Caso contrario, coloco o ultimo item de bombasAzul na posicao atual
-        loadn r3, #2
-        mul r5, r1, r3          ; r5 = r1 * 2 (ps. r1 acabou de ser decrementado)
-        add r5, r5, r2          ; r5 = addr(bombasAzul) + 2 * r1
+        loadn r3, #4
+        mul r5, r1, r3          ; r5 = r1 * 4 (ps. r1 acabou de ser decrementado)
+        add r5, r5, r2          ; r5 = addr(bombasAzul) + 4 * r1
 
-        loadi r3, r5            ; r3 = bombasAzul[2 * r1] -- Carrega o primeiro byte do ultimo item de bombasAzul
-        storei r4, r3           ; bombasAzul[2 * iterador] = r3 -- Substitui o primero byte do item atual pelo primeiro byte do ultimo item
+        loadi r3, r5            ; r3 = bombasAzul[4 * r1] -- Carrega o primeiro byte do ultimo item de bombasAzul
+        storei r4, r3           ; bombasAzul[4 * iterador] = r3 -- Substitui o primero byte do item atual pelo primeiro byte do ultimo item
 
         inc r4
         inc r5
@@ -877,35 +951,6 @@ TickBombas_Generico:
     pop r1
     pop r0
     rts
-
-;----------------------------------
-
-
-;********************************************************
-;                       BOMBA
-;********************************************************
-; bomba - param. é o endr. atual -> quando chamada resulta no inicio de um loop
-; loop -> cada iteração a bomba a bomba muda de "cenario" -> retorna ao cenario da bomba normal
-; limite de "tiques" para a bomba explodir? 3, eu acho
-
-
-
-; se caixa: caso a bomba exploda 
-;   -> e caixaS estiver numa regiao proxima e jogador NAO atingido (proximo) -> caixaS tem chance randomica (numeros, exemplo: se par entao sorteia dnv pra ver qual item) 
-;       (se impar, nao faz nada)
-;             faz o item aparecer no lugar onde foi explodida a caixa;
-;   
-;   -> (jogador atingido) 
-;     -> jogador de OUTRO numero sai como vitorioso apos um delay; conta apenas o primeiro que morrer; flagzinha pra isso
-
-
-; caso tecla E  -> jogador 1 bomba 
-; caso tecla I  -> jogador 2 bomba
-
-; bomba -> explosao em + -> se caixa estiver em +, explode normal
-; bomba -> se caixaS -> explode normal, chance de item
-
-; bomba alteracoes: caso colocamos efeitos especiais
 
 ;----------------------------------
 
@@ -964,6 +1009,7 @@ ApagaBloco:
 
 ;********************************************************
 ;                       SAIR
+; Procedimento para sair do jogo e terminar o programa.
 ;********************************************************
 Sair:
     call ApagaTela
@@ -975,12 +1021,12 @@ Sair:
 
     halt
 
-
 ;------------------------
 
 	
 ;********************************************************
 ;                       APAGA TELA
+; Procedimento que apaga a tela inteira.
 ;********************************************************
 ApagaTela:
 	push r0
