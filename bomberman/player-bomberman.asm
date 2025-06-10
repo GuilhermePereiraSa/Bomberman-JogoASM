@@ -138,7 +138,7 @@ main:
     ; Desenha os jogadores na tela
     call AtualizaAzul_Desenha
     call AtualizaRosa_Desenha   
-  
+
     loadn r0,#0                 ; Contador de frames (motivo: preciso de objetos que atualizem mais rapido que outros,
                                 ; como um contador da bomba, sla)
     loadn r2,#0                 ; Variavel auxiliar para verificar se num_frames == 0 mod n (n: tamanho de frames de um ciclo)
@@ -428,7 +428,8 @@ AtualizaAzul_Apaga:
 
     push r0
     call CalculaPosTela0    ; r0 = pos + pos//40
-    mov r1, r0              ; r1 = pos + pos//40
+    loadn r1, #tela0Linha0  ; r1 = addr(tela0Linha0)
+    add r1, r1, r0          ; r1 = addr(tela0Linha0) + pos + pos//40
     pop r0
     
 	loadi r2, r1            ; r5 = Char (Tela(posAnt))
@@ -531,6 +532,7 @@ AtualizaRosa_Input:
         pop r0
 
         rts
+
 
     AtualizaRosa_Input_J:
         loadn r1, #40
@@ -656,7 +658,8 @@ AtualizaRosa_Apaga:
 
     push r0
     call CalculaPosTela0    ; r0 = pos + pos//40
-    mov r1, r0              ; r1 = pos + pos//40
+    loadn r1, #tela0Linha0  ; r1 = addr(tela0Linha0)
+    add r1, r1, r0          ; r1 = addr(tela0Linha0) + pos + pos//40
     pop r0
     
 	loadi r2, r1            ; r5 = Char (Tela(posAnt))
@@ -702,10 +705,10 @@ AtualizaRosa_Desenha:
 ;
 ; SAIDA : r1 = resultado da verificacao
 ;           0: sem colisao
-;           1: com colisao (solido)
-;           2: com colisao (bloco destrutivel)
-;           3: com colisao (luck box)
-;           4: com colisao (bomba)
+;           1: com colisao (bomba)
+;           2: com colisao (luck box)
+;           3: com colisao (bloco destrutivel)
+;           4: com colisao (parede)
 ;
 ; 
 ; IDEIAS -- Guilherme
@@ -721,49 +724,68 @@ DetectaColisao:
     push r2
     push r3
 
-    loadn r1, #0                ; Inicia saida como sem colisao
+    loadn r1, #0                    ; Inicia saida como sem colisao
 
-    loadn r2, #127              ; Bitmask para remover a cor do caractere do cenario
+    loadn r2, #127                  ; Bitmask para remover a cor do caractere do cenario
 
-    call CalculaPosTela0        ; r0 = addr(tela0Linha0) + pos + pos//40
+    call CalculaPosTela0            ; r0 = pos + pos//40
+    loadn r3, #tela0Linha0          ; r3 = addr(tela0Linha0)
+    add r0, r0, r3                  ; r0 = addr(tela0Linha0) + pos + pos//40
 
-    loadi r3, r0                ; r5 = Valor do cenario na posicao em r0
-    and r3, r3, r2              ; Aplica o bitmask em r5 para capturar o caractere armazenado (sem cor)
+    loadi r3, r0                    ; r5 = Valor do cenario na posicao em r0
+    and r3, r3, r2                  ; Aplica o bitmask em r5 para capturar o caractere armazenado (sem cor)
     
+
     loadn r2,#1
-    cmp r3,r2                   ; Colisao com uma bomba
-    jeq DetectaColisao_Sim
+    cmp r3,r2                       
+    jeq DetectaColisao_Bomba        ; Colisao com uma bomba 
+
+    loadn r2,#'C'      
+    cmp r3,r2
+    jeq DetectaColisao_BlocoDest    ; colisao com o bloco 'C' (bloco destrutivel)
+
+    loadn r2,#'U'
+    cmp r3,r2
+    jeq DetectaColisao_LuckBox      ; colisao com o bloco 'U' (luck box)
 
     loadn r2,#'L'
-    cmp r3,r2                   ; Colisao com bloco 'L' (parede)
-    jeq DetectaColisao_Sim
+    cmp r3,r2
+    jeq DetectaColisao_Parede       ; Colisao com bloco 'L' (parede1)
 
     loadn r2,#'H'
-    cmp r3,r2                   ; Colisao com o bloco 'H' (parede2)
-    jeq DetectaColisao_Sim
-
-    loadn r2,#'C'
     cmp r3,r2
-    jeq DetectaColisao_Sim
+    jeq DetectaColisao_Parede       ; Colisao com o bloco 'H' (parede2)
 
     loadn r2,#'X'
     cmp r3,r2
-    jeq DetectaColisao_Sim
+    jeq DetectaColisao_Parede       ; Colisao com o bloco 'X' (parede3)
 
     loadn r2,#'P'
     cmp r3,r2
-    jeq DetectaColisao_Sim
+    jeq DetectaColisao_Parede       ; Colisao com o bloco 'P' (parede4)
 
     loadn r2,#'K'
     cmp r3,r2
-    jeq DetectaColisao_Sim
-
+    jeq DetectaColisao_Parede       ; Colisao com o bloco 'K' (parede5)
 
     jmp DetectaColisao_Fim
 
-    DetectaColisao_Sim:
-        loadn r1, #1
+    DetectaColisao_Parede:
+        loadn r1, #4
+        jmp DetectaColisao_Fim
 
+    DetectaColisao_BlocoDest:
+        loadn r1, #3
+        jmp DetectaColisao_Fim
+
+    DetectaColisao_LuckBox:
+        loadn r1, #2
+        jmp DetectaColisao_Fim
+
+    DetectaColisao_Bomba:
+        loadn r1, #1
+        jmp DetectaColisao_Fim
+    
     DetectaColisao_Fim:
         pop r3
         pop r2
@@ -788,7 +810,8 @@ ColocaBombaMapa:
 
     push r0
     call CalculaPosTela0        ; r0 = addr(tela0Linha0) + pos + pos//40
-    mov r2, r0                  ; r2 = addr(tela0Linha0) + pos + pos//40
+    loadn r2, #tela0Linha0
+    add r2, r2, r0
     pop r0
 
     loadn r1, #1                ; r1 = caractere da bomba (cor branca)
@@ -835,15 +858,16 @@ TickBombas:
 
 
 ; ATENCAO: DEFINITIVAMENTE TA MEIO FEIO, SE PUDEREM
-; ARRUMAR SERIA LEGAL
+; ARRUMAR SERIA LEGAL, O EXPLODIRBOMBA TAMBEM
 ;********************************************************
 ;               TickBombas_Generico
 ; Sub-procedimento de loop para decrementar os contadores
 ; das bombas, aplicando-se para ambos os jogadores
 ; 
 ; ARGS: r1 = endereco da variavel que guarda as bombas
-; usadas de um jogador
-;       r2 = endereco do vetor de bombas de um jogador  
+; usadas de um jogador (usadoBomba)
+;       r2 = endereco do vetor de bombas de um jogador
+;       (bombas)
 ; 
 ; obs. os enderecos de r1 e r2 devem pertencer ao mesmo
 ; jogador
@@ -870,19 +894,19 @@ TickBombas_Generico:
     push r3
     push r4
     push r5
+    push r6
 
     loadn r0, #0                ; r0 = Iterador do loop
-    push r1
-    loadi r1, r1                ; r1 = usadoBomba -- Limite do Loop
+    loadi r6, r1                ; r6 = usadoBomba -- Limite do Loop
 
     TickBombas_Generico_Loop:
-        cmp r0, r1
+        cmp r0, r6
         jeg TickBombas_Generico_Fim     ; Condicao de saida -- r0 >= r1
 
         loadn r5, #4
         mul r4, r0, r5                  ; r4 = 4 * iterador
-        add r4, r4, r2                  ; r4 = addr(bombasAzul) + 4 * iterador  (QUERO SALVAR O ENDERECO, NAO MUDE)
-        loadi r3, r4                    ; r3 = bombasAzul[4 * iterador] -- Carrega o contador da (iterador)-ezima bomba em bombasAzul
+        add r4, r4, r2                  ; r4 = addr(bombas) + 4 * iterador  (QUERO SALVAR O ENDERECO, NAO MUDE)
+        loadi r3, r4                    ; r3 = bombas[4 * iterador] -- Carrega o contador da (iterador)-ezima bomba em bombas
 
         dec r3 
         storei r4, r3                   ; Decrementa o contador e salva na memoria
@@ -893,59 +917,217 @@ TickBombas_Generico:
 
         ; Caso contrario, exploda a bomba da posicao atual
 
+        ; r0 = posicao da bomba no vetor; r1 = endereco de usadoBomba; r2 = endereco de bombas
+        call ExplodirBomba
 
-        ; ********** Remocao da bomba em tela0 **********
-
-        loadn r3, #1
-        add r3, r3, r4          ; r3 = addr(bombasAzul) + 2 * iterador + 1
-        loadi r5, r3            ; Carrega a posicao da r0-ezima bomba em bombasAzul; r5 = bombasAzul[2 * iterador + 1]
-
-        push r0
-        mov r0, r5		; r0 = bombaPos
-        call ApagaBloco		; Apaga a bomba na posicao correspondente em tela0
-        pop r0
-
-        ; ***********************************************
-
-        push r0
-        push r1
-
-        ; Passar em r0 a posicao para a explosao
-        ; Passar em r1 o raio de explosao
-        ; call criarExplosao
-
-        pop r1
-        pop r0
-
-        dec r1                          ; r1 = r1 - 1 -- Diminui a quantidade de iteracoes do loop
-        cmp r0, r1
-        jeg TickBombas_Generico_Skip    ; Se eu estiver no fim da lista, nao faco nada
-
-        ; Caso contrario, coloco o ultimo item de bombasAzul na posicao atual
-        loadn r3, #4
-        mul r5, r1, r3          ; r5 = r1 * 4 (ps. r1 acabou de ser decrementado)
-        add r5, r5, r2          ; r5 = addr(bombasAzul) + 4 * r1
-
-        loadi r3, r5            ; r3 = bombasAzul[4 * r1] -- Carrega o primeiro byte do ultimo item de bombasAzul
-        storei r4, r3           ; bombasAzul[4 * iterador] = r3 -- Substitui o primero byte do item atual pelo primeiro byte do ultimo item
-
-        inc r4
-        inc r5
-
-        loadi r3, r5            ; r3 = bombasAzul[2 * r1 + 1] -- Carrega o segundo byte do ultimo item de bombasAzul
-        storei r4, r3           ; bombasAzul[2 * iterador] = r3 -- Substitui o segundo byte do item atual pelo segundo byte do ultimo item
-
-        dec r0                  ; Gambiarra: volta o iterador uma vez pra verificar o novo item inserido na posicao atual
-        
         TickBombas_Generico_Skip:
             inc r0
-            jmp TickBombas_Generico_Loop
+            jmp TickBombas_Generico_Loop 
 
     TickBombas_Generico_Fim:
+        pop r6
+        pop r5
+        pop r4
+        pop r3
+        pop r2
+        pop r1
+        pop r0
+        rts
+
+;----------------------------------
+
+
+;********************************************************
+;               ExplodirBomba
+; Procedimento que explode uma bomba e arruma o vetor
+; de bombas de acordo
+; 
+; ARGS: r0 = index da bomba no vetor
+;       r1 = endereco da variavel que guarda as bombas
+; usadas de um jogador (usadoBomba)
+;       r2 = endereco do vetor de bombas de um jogador
+;       (bombas) 
+; 
+; obs. os enderecos de r1 e r2 devem pertencer ao mesmo
+; jogador
+;********************************************************
+ExplodirBomba:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+    push r5
+    push r6
+
+    loadn r5, #4
+    mul r4, r0, r5                  ; r4 = 4 * index
+    add r4, r4, r2                  ; r4 = addr(bombas) + 4 * index  (NAO MUDAR)
+
+    ; ********** Remocao da bomba em tela0 **********
+
+    loadn r3, #1
+    add r3, r3, r4          ; r3 = addr(bombasAzul) + 4 * index + 1
+    loadi r5, r3            ; r5 = bombas[2 * iterador + 1] -- Carrega a posicao da r0-ezima bomba em bombasAzul
+
+    push r0
+    mov r0, r5              ; r0 = bombaPos
+    call ApagaBloco         ; Apaga a bomba na posicao r0 em tela0
+    pop r0
+
+    ; ***********************************************
+
+    push r0
+    push r1
+
+    ; Passar em r0 a posicao para a explosao
+    mov r0, r5
+    ; Passar em r1 o raio de explosao
+    loadn r3, #2
+    add r3, r3, r4          ; r3 = addr(bombasAzul) + 4 * index + 2
+    loadi r1, r3            ; r5 = bombas[2 * iterador + 2] -- Carrega o raio da r0-ezima bomba em bombasAzul
+    call CriarExplosaoCruz
+
+    pop r1
+    pop r0
+
+
+    loadi r6, r1
+    dec r6                          ; r6 = r6 - 1 -- Diminui a quantidade de iteracoes do loop
+
+    cmp r0, r6
+    jeg ExplodirBomba_Fim           ; Se eu estiver no fim da lista, nao faco nada
+
+    ; Caso contrario, coloco o ultimo item de bombas na posicao atual
+
+    push r0
+    push r1
+    push r2
+
+    mov r3, r2
+    mov r2, r0              ; r2 = indice destino; NAO MUDAR A ORDEM
+    mov r1, r6              ; r1 = indice origem (ultimo elemento da lista)
+    mov r0, r3              ; r0 = endereco do vetor de bombas
+    call CopiarBombaLista   ; Copia o ultimo item da lista na posicao atual
+
+    pop r2
+    pop r1
+    pop r0
+
+    ExplodirBomba_Fim:
+        storei r1, r6               ; Salva a quantidade de bombas ainda em jogo na memoria
+
+        pop r6
+        pop r5
+        pop r4
+        pop r3
+        pop r2
+        pop r1
+        pop r0
+        rts
+
+;----------------------------------
+
+
+; USARIA ESSE PROCEDIMENTO PARA DESCONTAR O USADOBOMBAAZUL DE UMA BOMBA EXPLODIDA POR OUTRA BOMBA
+; ;********************************************************
+; ;           ExplodirBomba_ProcurarAzul
+; ; Sub-procedimento que dado a posicao de uma bomba, 
+; ; procura a referencia no vetor bombasAzul
+; ; 
+; ; ARGS  : r1 = posicao da bomba
+; ; 
+; ; SAIDA : r0 = indice da bomba em bombasAzul
+; ;           Caso falhe, retorna -1
+; ;********************************************************
+; ExplodirBomba_ProcurarAzul:
+;     push r1
+;     push r2
+;     push r3
+;     push r4
+;     push r5
+; 
+;     loadn r0, #65535
+; 
+;     loadn r2, #0
+;     load r3, usadoBombaAzul                     ; Limite para o loop
+;     loadn r4, #bombasAzul                       ; r4 = addr(bombasAzul)
+;     loadn r5, #1
+;     add r4, r4, r5                              ; r4 = addr(bombasAzul) + 1 -- Pego o endereco da posicao da primeira bomba na lista
+; 
+;     ExplodirBomba_ProcurarAzul_Loop:
+;         cmp r2, r3
+;         jeg ExplodirBomba_ProcurarAzul_Fim      ; Fim do loop
+;         
+;         loadi r5, r4                            ; r5 = bombasAzul[4 * r2 + 1] -- Pego a posicao da r2-ezima bomba na lista
+;         cmp r5, r1
+;         jeq ExplodirBomba_ProcurarAzul_Sucesso
+; 
+;         inc r2
+;         loadn r5, #4
+;         add r4, r4, r5
+; 
+;         jmp ExplodirBomba_ProcurarAzul_Loop
+; 
+;     ExplodirBomba_ProcurarAzul_Sucesso:
+;         mov r0, r2
+; 
+;     ExplodirBomba_ProcurarAzul_Fim:
+;         pop r5
+;         pop r4
+;         pop r3
+;         pop r2
+;         pop r1
+;         rts
+; 
+; ;----------------------------------
+
+
+;********************************************************
+;                   CopiarBombaLista
+; Procedimento que copia os dados de um item da lista 
+; do tipo bombasXXXX (4 bytes cada item) de uma posicao 
+; para a outra
+; 
+; ARGS  : r0 = endereco da lista
+;         r1 = posicao (indice) origem
+;         r2 = posicao (indice) destino
+;********************************************************
+CopiarBombaLista:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+    push r5
+
+    loadn r3, #4
+    mul r4, r1, r3          ; r4 = 4 * r1
+    mul r5, r2, r3          ; r5 = 4 * r2
+    add r4, r4, r0          ; r4 = addr(bombas) + 4 * r1 -- endereco da bomba de origem
+    add r5, r5, r0          ; r5 = addr(bombas) + 4 * r2 -- endereco da bomba de destino
+
+    loadi r3, r4            ; r3 = bombas[4 * r1] -- Carrega o primeiro byte da bomba de origem
+    storei r5, r3           ; bombas[4 * r2] = r3 -- Substitui o primero byte da bomba de destino pelo 
+                            ; primeiro byte da bomba de origem
     
-    mov r3, r1                  ; r3 = r1 -- Salva o novo valor de usadoBomba em r3
-    pop r1                      ; Carrega o endereco da variavel usadoBombaXXXX (de um jogador)
-    storei r1, r3               ; Salva a quantidade de bombas ainda em jogo na memoria
+    inc r4
+    inc r5
+    loadi r3, r4            ; r3 = bombas[4 * r1 + 1] -- Carrega o segundo byte da bomba de origem
+    storei r5, r3           ; bombas[4 * r2 + 1] = r3 -- Substitui o segundo byte da bomba de destino pelo 
+                            ; segundo byte da bomba de origem
+
+    inc r4
+    inc r5
+    loadi r3, r4            ; r3 = bombas[4 * r1 + 2] -- Carrega o terceiro byte da bomba de origem
+    storei r5, r3           ; bombas[4 * r2 + 2] = r3 -- Substitui o terceiro byte da bomba de destino pelo
+                            ; terceiro byte da bomba de origem
+
+    inc r4
+    inc r5
+    loadi r3, r4            ; r3 = bombas[4 * r1 + 3] -- Carrega o quarto byte da bomba de origem
+    storei r5, r3           ; bombas[4 * r2 + 3] = r3 -- Substitui o quarto byte da bomba de destino pelo
+                            ; quarto byte da bomba de origem
 
     pop r5
     pop r4
@@ -959,25 +1141,313 @@ TickBombas_Generico:
 
 
 ;********************************************************
+;                   CriarExplosaoCruz
+; Procedimento que cria uma explosao em formato de 
+; cruz.
+; 
+; ARGS  : r0 = centro da explosao
+;         r1 = raio da explosao
+;********************************************************
+CriarExplosaoCruz:
+    push r1
+    call ExplodirPos
+    pop r1
+
+    call CriarExplosaoCruz_Esq
+    call CriarExplosaoCruz_Dir
+    call CriarExplosaoCruz_Cima
+    call CriarExplosaoCruz_Baixo
+
+    CriarExplosaoCruz_Fim:
+        rts
+
+
+;********************************************************
+;                   CriarExplosaoCruz_Esq
+; Sub-procedimento que cria uma explosao para esquerda
+; 
+; ARGS  : r0 = centro da explosao
+;         r1 = raio da explosao
+;********************************************************
+CriarExplosaoCruz_Esq:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+
+    loadn r2, #0                            ; Iterador
+    CriarExplosaoCruz_Esq_Loop:
+        cmp r2, r1
+        jeg CriarExplosaoCruz_Esq_Fim       ; Fim do loop
+        
+        loadn r3, #40
+        loadn r4, #0
+        mod r3, r0, r3                      ; r3 = r1 mod 40
+
+        cmp r3, r4                          ; r3 == 0
+        jeq CriarExplosaoCruz_Esq_Fim       ; Condicao de saida da tela
+
+        dec r0                              ; r0 = r0 - 1 -- nova posicao para a explosao
+
+        push r1
+        call ExplodirPos                    ; Tenta explodir a posicao atual e manda resultado (igual a DetectaColisao) em r1
+        mov r3, r1
+        pop r1
+
+        loadn r4, #0
+        cmp r3, r4
+        jeq CriarExplosaoCruz_Esq_Cont      ; Caso nao tiver colisao: continuar
+
+        jmp CriarExplosaoCruz_Esq_Fim       ; Caso tiver colisao com qualquer coisa: parar
+
+        CriarExplosaoCruz_Esq_Cont:
+            inc r2
+            jmp CriarExplosaoCruz_Esq_Loop
+
+    CriarExplosaoCruz_Esq_Fim:
+        pop r4
+        pop r3
+        pop r2
+        pop r1
+        pop r0
+
+        rts
+
+
+;********************************************************
+;                   CriarExplosaoCruz_Dir
+; Sub-procedimento que cria uma explosao para direita
+; 
+; ARGS  : r0 = centro da explosao
+;         r1 = raio da explosao
+;********************************************************
+CriarExplosaoCruz_Dir:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+
+    loadn r2, #0                            ; Iterador
+    CriarExplosaoCruz_Dir_Loop:
+        cmp r2, r1
+        jeg CriarExplosaoCruz_Dir_Fim       ; Fim do loop
+
+        loadn r3, #40
+        loadn r4, #39
+        mod r3, r0, r3                      ; r3 = r1 mod 40
+
+        cmp r3, r4                          ; r3 == 39
+        jeq CriarExplosaoCruz_Dir_Fim       ; Condicao de saida da tela (na nova pos)
+
+        inc r0                              ; r0 = r0 + 1 -- nova posicao para a explosao
+
+        push r1
+        call ExplodirPos                    ; Tenta explodir a posicao atual e manda resultado (igual a DetectaColisao) em r1
+        mov r3, r1
+        pop r1
+
+        loadn r4, #0
+        cmp r3, r4
+        jeq CriarExplosaoCruz_Dir_Cont      ; Caso nao tiver colisao: continuar
+
+        jmp CriarExplosaoCruz_Dir_Fim       ; Caso tiver colisao com qualquer coisa: parar
+
+        CriarExplosaoCruz_Dir_Cont:
+            inc r2
+            jmp CriarExplosaoCruz_Dir_Loop
+
+    CriarExplosaoCruz_Dir_Fim:
+        pop r4
+        pop r3
+        pop r2
+        pop r1
+        pop r0
+
+        rts
+
+
+;********************************************************
+;                   CriarExplosaoCruz_Cima
+; Sub-procedimento que cria uma explosao para cima
+; 
+; ARGS  : r0 = centro da explosao
+;         r1 = raio da explosao
+;********************************************************
+CriarExplosaoCruz_Cima:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+
+    loadn r2, #0                            ; Iterador
+    CriarExplosaoCruz_Cima_Loop:
+        cmp r2, r1
+        jeg CriarExplosaoCruz_Cima_Fim       ; Fim do loop
+
+        loadn r3, #40
+        cmp r0, r3
+        jle CriarExplosaoCruz_Cima_Fim       ; Condicao de saida da tela
+
+        sub r0, r0, r3
+
+        push r1
+        call ExplodirPos                    ; Tenta explodir a posicao atual e manda resultado (igual a DetectaColisao) em r1
+        mov r3, r1
+        pop r1
+
+        loadn r4, #0
+        cmp r3, r4
+        jeq CriarExplosaoCruz_Cima_Cont      ; Caso nao tiver colisao: continuar
+
+        jmp CriarExplosaoCruz_Cima_Fim       ; Caso tiver colisao com qualquer coisa: parar
+
+        CriarExplosaoCruz_Cima_Cont:
+            inc r2
+            jmp CriarExplosaoCruz_Cima_Loop
+
+    CriarExplosaoCruz_Cima_Fim:
+        pop r4
+        pop r3
+        pop r2
+        pop r1
+        pop r0
+
+        rts
+
+
+;********************************************************
+;                   CriarExplosaoCruz_Baixo
+; Sub-procedimento que cria uma explosao para baixo
+; 
+; ARGS  : r0 = centro da explosao
+;         r1 = raio da explosao
+;********************************************************
+CriarExplosaoCruz_Baixo:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+
+    loadn r2, #0                            ; Iterador
+    CriarExplosaoCruz_Baixo_Loop:
+        cmp r2, r1
+        jeg CriarExplosaoCruz_Baixo_Fim       ; Fim do loop
+
+        loadn r3, #1159
+        cmp r0, r3
+        jgr CriarExplosaoCruz_Baixo_Fim       ; Condicao de saida da tela
+
+        loadn r3, #40
+        add r0, r0, r3
+
+        push r1
+        call ExplodirPos                    ; Tenta explodir a posicao atual e manda resultado (igual a DetectaColisao) em r1
+        mov r3, r1
+        pop r1
+
+        loadn r4, #0
+        cmp r3, r4
+        jeq CriarExplosaoCruz_Baixo_Cont      ; Caso nao tiver colisao: continuar
+
+        jmp CriarExplosaoCruz_Baixo_Fim       ; Caso tiver colisao com qualquer coisa: parar
+
+        CriarExplosaoCruz_Baixo_Cont:
+            inc r2
+            jmp CriarExplosaoCruz_Baixo_Loop
+
+    CriarExplosaoCruz_Baixo_Fim:
+        pop r4
+        pop r3
+        pop r2
+        pop r1
+        pop r0
+
+        rts
+
+;----------------------------------
+
+
+;********************************************************
+;                   ExplodirPos
+; Procedimento que dada uma posicao, explode essa posicao
+; e cuida dos resultados
+; 
+; Em especial, cada bloco vai ter uma resposta diferente
+; 
+; ARGS  : r0 = posicao a ser explodida
+; 
+; SAIDA : r1 = Mesmo que DetectaColisao na posicao
+;********************************************************
+ExplodirPos:
+    push r0
+    push r2
+    push r3
+
+    call DetectaColisao
+    
+    loadn r2, #0
+    cmp r1, r2
+    jeq ExplodirPos_Normal      ; Explosao de espaco vazio
+
+;     loadn r2, #1
+;     cmp r1, r2
+;     jeq ExplodirPos_HitBomba    ; Explosao de bomba (explodir a outra bomba)
+
+;     loadn r2, #2
+;     cmp r1, r2
+;     jeq ExplodirPos_LuckBox     ; Explosao de luck box (gerar item caso der sorte)
+
+    loadn r2, #3
+    cmp r1, r2
+    jeq ExplodirPos_Destruir    ; Explosao de bloco destrutível
+
+    loadn r2, #4
+    cmp r1, r2
+    jeq ExplodirPos_Skip        ; Explosao de parede
+
+;     ExplodirPos_HitBomba:
+
+    ExplodirPos_Destruir:       ; Apaga o bloco do cenario
+        call ApagaBloco
+
+    ExplodirPos_Normal:         ; Explode a posicao
+        loadn r2, #2            ; Caractere do primeiro frame da explosao
+        loadn r3, #2304         ; Cor vermelha
+        add r2, r2, r3          ; Aplica a cor em r2
+        outchar r2, r0          ; Imprimir a explosao na tela
+
+        call CalculaPosTela0
+        loadn r3, #tela8Linha0   ; r3 = addr(tela8Linha0)
+        add r3, r3, r0          ; r3 = addr(tela8Linha0) + posTela; posTela = pos + pos//40
+        storei r3, r2           ; tela8[posTela] = char explosao -- Salvar a explosao em tela8
+
+    ExplodirPos_Skip:
+        pop r3
+        pop r2
+        pop r0
+        rts
+
+
+;********************************************************
 ;               CalculaPosTela0
 ; Procedimento que, dado uma posicao (no display) mapeia
 ; para a posicao correspondente na tela0
-; 
+;
 ; ARGS  : r0 = posicao no display
 ;
 ; SAIDA : r0 = posicao em tela0
 ;********************************************************
 CalculaPosTela0:
     push r1
-    push r2
 
-    loadn r2, #tela0Linha0
     loadn r1, #40
     div r1, r0, r1              ; r1 = pos//40 (divisao inteira)
-    add r1, r1, r0              ; r1 = pos + pos//40  -->  tem que somar pos//40 pois as linhas da string (tela0) possuem '\0'
-    add r0, r2, r1              ; r0 = tela0linha0 + pos + pos//40
+    add r0, r1, r0              ; r0 = pos + pos//40  -->  tem que somar pos//40 pois as linhas da string (tela0) possuem '\0'
 
-    pop r2
     pop r1
     rts
 
@@ -998,7 +1468,9 @@ ApagaBloco:
     loadn r1, #' '
     outchar r1, r0          ; Apaga a posicao no display
     
-    call CalculaPosTela0    ; r0 = addr(tela0Linha0) + pos + pos//40
+    call CalculaPosTela0    ; r0 = pos + pos//40
+    loadn r1, #tela0Linha0  ; r1 = addr(tela0Linha0)
+    add r0, r0, r1          ; r0 = addr(tela0Linha0) + pos + pos//40
 
     loadn r1, #' '
     storei r0, r1           ; tela0[pos + pos//40] = ' ' -- Apaga a posicao em tela0
@@ -1244,6 +1716,90 @@ ImprimeStr2:    ; Rotina de Impresao de Mensagens; Obs: a mensagem sera' impress
 
 
 ;------------------------		
+
+
+;********************************************************
+;                       IMPRIME TELA4
+;********************************************************	
+
+ImprimeTela4: 	;  Rotina de Impresao das Explosoes na Tela Inteira (ImprimeTela2, porem nao escreve em tela0)
+		;  r1 = endereco onde comeca a primeira linha do Cenario
+		;  r2 = cor do Cenario para ser impresso
+
+	push r0	; protege o r3 na pilha para ser usado na subrotina
+	push r1	; protege o r1 na pilha para preservar seu valor
+	push r2	; protege o r1 na pilha para preservar seu valor
+	push r3	; protege o r3 na pilha para ser usado na subrotina
+	push r4	; protege o r4 na pilha para ser usado na subrotina
+	push r5	; protege o r5 na pilha para ser usado na subrotina
+
+	loadn r0, #0  	; posicao inicial tem que ser o comeco da tela!
+	loadn r3, #40  	; Incremento da posicao da tela!
+	loadn r4, #41  	; incremento do ponteiro das linhas da tela
+	loadn r5, #1200 ; Limite da tela!
+	
+   ImprimeTela4_Loop:
+		call ImprimeStr4
+		add r0, r0, r3  	; incrementaposicao para a segunda linha na tela -->  r0 = r0 + 40
+		add r1, r1, r4  	; incrementa o ponteiro para o comeco da proxima linha na memoria (40 + 1 porcausa do /0 !!) --> r1 = r1 + 41
+		cmp r0, r5			; Compara r0 com 1200
+		jne ImprimeTela4_Loop	; Enquanto r0 < 1200
+
+	pop r5	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+				
+;---------------------------	
+
+
+;********************************************************
+;                   IMPRIME STRING4
+;********************************************************
+	
+ImprimeStr4:    ; Rotina de Impresao de Mensagens; Obs: a mensagem sera' impressa ate' encontrar "/0"
+    ; r0 = Posicao da tela que o primeiro caractere da mensagem sera' impresso
+    ; r1 = endereco onde comeca a mensagem
+    ; r2 = cor da mensagem.
+
+	push r0	; protege o r0 na pilha para preservar seu valor
+	push r1	; protege o r1 na pilha para preservar seu valor
+	push r2	; protege o r1 na pilha para preservar seu valor
+	push r3	; protege o r3 na pilha para ser usado na subrotina
+	push r4	; protege o r4 na pilha para ser usado na subrotina
+	push r5	; protege o r5 na pilha para ser usado na subrotina
+	
+	
+	loadn r3, #'\0'	; Criterio de parada
+	loadn r5, #' '	; Espaco em Branco
+
+    ImprimeStr4_Loop:	
+		loadi r4, r1
+		cmp r4, r3		; If (Char == \0)  vai Embora
+		jeq ImprimeStr4_Sai
+		cmp r4, r5		; If (Char == ' ')  vai Pula outchar do espaco para na apagar outros caracteres
+		jeq ImprimeStr4_Skip
+		add r4, r2, r4	; Soma a Cor
+		outchar r4, r0	; Imprime o caractere na tela
+    ImprimeStr4_Skip:
+		inc r0			; Incrementa a posicao na tela
+		inc r1			; Incrementa o ponteiro da String
+		jmp ImprimeStr4_Loop
+	
+    ImprimeStr4_Sai:	
+	pop r5	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+;---------------------------	
+
 
 ;********************************************************
 ;                   DIGITE UMA LETRA
@@ -1525,7 +2081,7 @@ tela7Linha27 : string "                                        "
 tela7Linha28 : string "                                        "
 tela7Linha29 : string "                                        " 
 
-; Tela dedicada para as explosoes no mapa
+; Tela dedicada para as explosoes no mapa -- Vermelho
 tela8Linha0  : string "                                        "
 tela8Linha1  : string "                                        "
 tela8Linha2  : string "                                        "
