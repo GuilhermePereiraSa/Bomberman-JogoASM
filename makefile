@@ -21,5 +21,5 @@ assemble: $(source_path)/$(program_name).mif
 clear:
 	rm $(source_path)/$(program_name).mif
 
-$(source_path)/$(program_name).mif:
+$(source_path)/$(program_name).mif: $(source_path)/$(program_name).asm
 	$(assembler_path) $(source_path)/$(program_name).asm $@
