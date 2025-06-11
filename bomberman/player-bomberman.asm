@@ -150,7 +150,7 @@ main:
         inchar r1
         store teclaLidaLoop, r1
 
-        ; call AnimExplosao --> chamada para cuidar das animacoes das bombas; remove as explosoes quando terminarem
+        call AnimExplosao               ; chamada para cuidar das animacoes das bombas; remove as explosoes quando terminarem
 
         
         call AtualizaAzul               ; atualiza o jogador azul (movimento e bomba)
@@ -234,6 +234,70 @@ ImprimirCenario:
 
 ;----------------------------------
 
+
+;********************************************************
+;                   AnimExplosao
+; Procedimento que anima as explosoes no mapa.
+;********************************************************
+AnimExplosao:
+	push r0
+	push r1
+    push r2
+    push r3
+    push r4
+    push r5
+    push r6
+	
+    loadn r0, #tela8Linha0
+    loadn r1, #0                        ; Iterador do loop
+    loadn r2, #1200                     ; Limite do loop
+    loadn r3, #2310                     ; Ultimo frame da explosao aplicando a cor vermelha: 2304 + 6
+    loadn r4, #2306                     ; Primeiro frame da explosao aplicando a cor vermelha: 2304 + 2
+
+    AnimExplosao_Loop:
+        loadi r5, r0
+        cmp r5, r4
+        jle AnimExplosao_Loop_Skip
+
+        cmp r3, r5
+        jeq AnimExplosao_Loop_Remove    ; Caso a animacao estiver no ultimo frame, remover a explosao
+        
+        inc r5
+        storei r0, r5                   ; Avanca o frame de animacao
+        outchar r5, r1
+        jmp AnimExplosao_Loop_Skip
+
+        AnimExplosao_Loop_Remove:
+            loadn r5, #' '
+            storei r0, r5               ; Remover a explosao
+            outchar r5, r1
+
+        AnimExplosao_Loop_Skip:
+            inc r1
+            loadn r5, #40
+            loadn r6, #0
+            mod r5, r1, r5
+
+            cmp r5, r6
+            jne AnimExplosao_Loop_Skip_NonZero
+
+            inc r0
+
+            AnimExplosao_Loop_Skip_NonZero:
+                inc r0
+                cmp r1, r2
+                jle AnimExplosao_Loop
+
+    pop r6
+    pop r5
+    pop r4
+    pop r3
+	pop r2
+    pop r1
+	pop r0
+	rts	
+
+;----------------------------------
 
 ;********************************************************
 ;                   AtualizaAzul
@@ -1430,6 +1494,8 @@ ExplodirPos:
         pop r2
         pop r0
         rts
+
+;----------------------------------
 
 
 ;********************************************************
