@@ -5,14 +5,14 @@ w - cima
 a - esquerda
 s - baixo
 d - direita
-e - soltar bomba
+f - soltar bomba
 
 mover personagem 2
-o - cima
-l - baixo
+i - cima
+k - baixo
 k - esquerda
-ç- direita
-i - soltar bomba
+l - direita
+h - soltar bomba
 
 strcpy
 
