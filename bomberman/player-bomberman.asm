@@ -213,7 +213,7 @@ ImprimirCenario:
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
 
 	loadn r1, #tela4Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
-	loadn r2, #521  			; cor verde!
+	loadn r2, #512  			; cor verde!
 	call ImprimeTela2   		; Rotina de Impresao de Cenario na Tela Inteira
 
 	loadn r1, #tela5Linha0	    ; Endereco onde comeca a primeira linha do cenario!!
