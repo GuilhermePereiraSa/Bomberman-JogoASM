@@ -37,6 +37,7 @@ Rand : var #30			; Tabela de nr. Randomicos entre 7 - 10
 jmp MostrarMenu
 
 Msg1: string "DESEJA JOGAR NOVAMENTE? (s/n)" ; Mensagem para jogar novamente
+MsgAzul: string "JOGADOR AZUL GANHOU!"
 OpSaidaFinal: var #1		; Contem a letra que foi digitada - 1 byte apenas
 MsgFim: string "OBRIGADO POR JOGAR!"
 
@@ -1977,6 +1978,7 @@ ApagaBuffer:
 ;********************************************************
 Sair:
     call ApagaTela
+
     ; Pode colocar mensagem de despedida, ou parar o programa
     loadn r0, #100
     loadn r1, #MsgFim

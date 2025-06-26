@@ -7,7 +7,8 @@ use ieee.std_LOGIC_ARITH.all;
 use ieee.std_LOGIC_unsigned.all;
 
 entity cpu is
-	port( clk			: in	std_LOGIC; reset			: in	std_LOGIC;
+	port( clk			: in	std_LOGIC; 
+            reset			: in	std_LOGIC;
 
 			Mem			: in	STD_LOGIC_VECTOR(15 downto 0);
 			M5				: out STD_LOGIC_VECTOR(15 downto 0);
@@ -40,7 +41,7 @@ ARCHITECTURE main of cpu is
 	-- Data Manipulation Instructions:												-- Usage		    -- Action     	-- Format	
 	CONSTANT LOAD			: STD_LOGIC_VECTOR(5 downto 0) := "110000";		-- LOAD RX END  -- RX <- M[END]  Format: < inst(6) | RX(3) | xxxxxxx >  + 16bit END
 	CONSTANT STORE			: STD_LOGIC_VECTOR(5 downto 0) := "110001";		-- STORE END RX -- M[END] <- RX  Format: < inst(6) | RX(3) | xxxxxxx >  + 16bit END
-	CONSTANT LOADIMED		: STD_LOGIC_VECTOR(5 downto 0) := "111000";		-- LOADN RX Nr   -- RX <- Nr    	Format: < inst(6) | RX(3) | xxxxxxb0 >  + 16bit Numero
+	CONSTANT LOADIMED		: STD_LOGIC_VECTOR(5 downto 0) := "111000";		-- LOADN RX Nr   -- RX <- Nr    	Format: < inst(6) | RX(3) | xxxxxxXX >  + 16bit Numero
 	CONSTANT LOADINDEX	: STD_LOGIC_VECTOR(5 downto 0) := "111100";		-- LOADI RX RY   -- RX <- M[RY]	Format: < inst(6) | RX(3) | RY(3) | xxxx >
 	CONSTANT STOREINDEX	: STD_LOGIC_VECTOR(5 downto 0) := "111101";		-- STOREI RX RY  -- M[RX] <- RY	Format: < inst(6) | RX(3) | RY(3) | xxxx >
 	CONSTANT MOV			: STD_LOGIC_VECTOR(5 downto 0) := "110011";		-- MOV RX RY    -- RX <- RY	  	Format: < inst(6) | RX(3) | RY(3) | xx | x0 >
@@ -420,7 +421,7 @@ begin
 						selM2 := sSp;
 						LoadReg(RX) := '1';
 					ELSE
-						M3 := REG(RX);
+						M4 := REG(RX);
 						LoadSp := '1';
 					END IF;	
 				END IF;
@@ -526,7 +527,7 @@ begin
 				OP(6)<=IR(0);
 
 				selM6 := sULA;
-				LoadReg(RX) := '1';
+				-- LoadReg(RX) := '1'; --> errado??
 				LoadFR := '1';	
 				
 
@@ -612,9 +613,9 @@ begin
 				M1 <= SP;
 				RW <= '1';
 				IF(IR(6) = '0') THEN M3 := REG(rx);
-				ELSE M3 := FR; END IF;
+				ELSE M3 := auxFR; END IF;
 
-				M3 := REG(RX);
+				-- M3 := REG(RX);
 				M5 <= M3;
 				DecSP := '1';
 
@@ -698,7 +699,7 @@ begin
 				Rw<= '0';
 				SelM2 := sMEM;
 				LoadReg(RX) := '1';
-				state := fetch;
+				-- state := fetch;
 				state := fetch;
 			END IF;
 							
@@ -749,7 +750,7 @@ begin
 --========================================================================
 			IF(IR(15 DOWNTO 10) = POP) THEN
 				M1 <= SP;
-				RW <= '1';
+				RW <= '0';
 				IF(IR(6)='0') THEN
 					SelM2 := sMEM;
 					LoadReg(RX) := '1';
