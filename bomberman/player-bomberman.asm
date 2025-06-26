@@ -37,9 +37,10 @@ Rand : var #30			; Tabela de nr. Randomicos entre 7 - 10
 jmp MostrarMenu
 
 Msg1: string "DESEJA JOGAR NOVAMENTE? (s/n)" ; Mensagem para jogar novamente
-MsgAzul: string "JOGADOR AZUL GANHOU!"
+MsgAzul: string "Jogador azul venceu!"
+MsgRosa: string "Jogador rosa venceu!"
 OpSaidaFinal: var #1		; Contem a letra que foi digitada - 1 byte apenas
-MsgFim: string "OBRIGADO POR JOGAR!"
+MsgFim: string "Obrigado por jogar!"
 
 
 MsgTitulo: string "==== BOMBERMAN ===="
@@ -1810,6 +1811,7 @@ CheckExplosao:
     add r1, r1, r0                      ; r1 = endereco da posicao referente ao jogador azul no buffer de explosao
     loadi r2, r1                        ; r2 = valor do buffer de explosao na posicao do jogador azul
 
+    loadn r0, #2
     loadn r3, #32
     cmp r2, r3
     jne Sair
@@ -1821,6 +1823,7 @@ CheckExplosao:
     add r1, r1, r0                      ; r1 = endereco da posicao referente ao jogador rosa no buffer de explosao
     loadi r2, r1                        ; r2 = valor do buffer de explosao na posicao do jogador azul
 
+    loadn r0, #1
     loadn r3, #32
     cmp r2, r3
     jne Sair
@@ -1975,9 +1978,16 @@ ApagaBuffer:
 ;********************************************************
 ;                       SAIR
 ; Procedimento para sair do jogo e terminar o programa.
+;
+; ARGS  : r0 = qual jogador ganhou
+;           0 : nenhum jogador ganhou
+;           1 : jogador azul ganhou
+;           2 : jogador rosa ganhou
 ;********************************************************
 Sair:
     call ApagaTela
+
+    push r0
 
     ; Pode colocar mensagem de despedida, ou parar o programa
     loadn r0, #100
@@ -1986,11 +1996,43 @@ Sair:
     
     call ImprimeStr
 
+    pop r0
+
+    loadn r1, #0
+    cmp r0, r1
+    jeq Sair_Fim
+
+    loadn r1, #1
+    cmp r0, r1
+    jeq Sair_Azul
+
+    loadn r1, #2
+    cmp r0, r1
+    jeq Sair_Rosa
+
+    jmp Sair_Fim
+
+    Sair_Azul:
+        loadn r1, #MsgAzul
+        jmp Sair_ImprimirVencedor
+
+    Sair_Rosa:
+        loadn r1, #MsgRosa
+        jmp Sair_ImprimirVencedor
+
+    Sair_ImprimirVencedor:
+        loadn r0, #220
+        loadn r2, #0
+        call ImprimeStr
+
+
+    Sair_Fim:
+
     halt
 
 ;------------------------
 
-	
+
 ;********************************************************
 ;                       APAGA TELA
 ; Procedimento que apaga a tela inteira.
