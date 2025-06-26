@@ -135,7 +135,8 @@ MostrarMenu:
         jmp MostrarMenu_Escolha         ; Se for opcao invalida, nao fazer nada
 
 ;------------------------
-	
+
+
 ;********************************************************
 ;                        MAIN
 ; Procedimento principal do jogo
@@ -369,6 +370,7 @@ AtualizaAzul_Input:
     push r1
     push r2
     push r3
+    push r4
 
     load r0, posAzul            ; r0 = posicao atual do jogador Azul (NÃO MUDAR NO PROCEDIMENTO)
     load r1, teclaLidaLoop      ; r1 = Input do teclado no frame
@@ -394,6 +396,7 @@ AtualizaAzul_Input:
     jeq AtualizaAzul_Input_F        ; Tecla f (colocar bomba na posicao)
 
     AtualizaAzul_Input_Skip:
+        pop r4
         pop r3
         pop r2
         pop r1
@@ -516,6 +519,7 @@ AtualizaAzul_Input:
         push r0
         push r1
 
+        mov r4, r0
         mov r2, r1
         loadn r0, #rangeBombaAzul       ; r0 = addr(rangeBombaAzul)
         
@@ -523,11 +527,17 @@ AtualizaAzul_Input:
         loadn r3, #7
         cmp r2, r3
         ceq BombaRangeP     ; Colisao com bombrange+
+        mov r0, r4
+        cmp r2, r3
+        ceq ApagaBuffer
 
         loadn r1, #65535                ; r1 = -1 (65536 - 1)
         loadn r3, #8
         cmp r2, r3
         ceq BombaRangeP     ; Colisao com bombrange-
+        mov r0, r4
+        cmp r2, r3
+        ceq ApagaBuffer
 
         pop r1
         pop r0
@@ -536,6 +546,7 @@ AtualizaAzul_Input:
         push r0
         push r1
 
+        mov r4, r0
         mov r2, r1
         loadn r0, #timeBombaAzul       ; r0 = addr(rangeBombaAzul)
         
@@ -543,11 +554,17 @@ AtualizaAzul_Input:
         loadn r3, #9
         cmp r2, r3
         ceq BombaSpeedP     ; Colisao com BombaSpeedP+
+        mov r0, r4
+        cmp r2, r3
+        ceq ApagaBuffer
 
         loadn r1, #50
         loadn r3, #10
         cmp r2, r3
-        ceq BombaSpeedP     ; Colisao com BombaSpeedP-
+        ceq BombaSpeedP     ; Colisao com BombaSpeedP
+        mov r0, r4
+        cmp r2, r3
+        ceq ApagaBuffer
 
         pop r1
         pop r0
@@ -778,15 +795,66 @@ AtualizaRosa_Input:
         call DetectaColisao             ; testa se nao ha nenhuma colisao na posicao a ser usada
                                         ; Retorna resultado em r1
 
-        loadn r2,#0
+        loadn r2,#1
         cmp r1, r2
-        jne AtualizaRosa_Input_Skip     ; Se existir colisao, nao atualizar a posicao
+        jeq AtualizaRosa_Input_Skip     ; Colisao com bomba, nao atualizar a posicao
 
+        loadn r2,#2
+        cmp r1, r2
+        jeq AtualizaRosa_Input_Skip     ; Colisao com luck box, nao atualizar a posicao
+
+        loadn r2,#3
+        cmp r1, r2
+        jeq AtualizaRosa_Input_Skip     ; Colisao com bloco, nao atualizar a posicao
+
+        loadn r2,#4
+        cmp r1, r2
+        jeq AtualizaRosa_Input_Skip     ; Colisao com parede, nao atualizar a posicao
+
+        push r0
+        push r1
+
+        mov r2, r1
+        loadn r0, #rangeBombaRosa       ; r0 = addr(rangeBombaRosa)
+        
+        loadn r1, #1                
+        loadn r3, #7
+        cmp r2, r3
+        ceq BombaRangeP     ; Colisao com bombrange+
+
+        loadn r1, #65535                ; r1 = -1 (65536 - 1)
+        loadn r3, #8
+        cmp r2, r3
+        ceq BombaRangeP     ; Colisao com bombrange-
+
+        pop r1
+        pop r0
+
+
+        push r0
+        push r1
+
+        mov r2, r1
+        loadn r0, #timeBombaRosa       ; r0 = addr(rangeBombaRosa)
+        
+        loadn r1, #65486                ; r1 = -50 (65536 - 50)
+        loadn r3, #9
+        cmp r2, r3
+        ceq BombaSpeedP     ; Colisao com BombaSpeedP+
+
+        loadn r1, #50
+        loadn r3, #10
+        cmp r2, r3
+        ceq BombaSpeedP     ; Colisao com BombaSpeedP-
+
+        pop r1
+        pop r0
+        
         ; Caso contrario, atualizar a posicao
         store posRosa, r0
 
         jmp AtualizaRosa_Input_Skip
-    
+
 
 ;********************************************************
 ;                   AtualizaRosa_Apaga
@@ -1005,7 +1073,6 @@ DetectaColisao:
 
     DetectaColisao_Powerup:
         mov r1, r3 ;
-        breakp
         jmp DetectaColisao_Fim
     
     DetectaColisao_Fim:
@@ -1577,7 +1644,22 @@ ExplodirPos:
     cmp r1, r2
     jeq ExplodirPos_Skip        ; Explosao de parede
 
-    breakp
+    loadn r2, #7
+    cmp r1, r2
+    jeq ExplodirPos_Destruir    ; Explosao de bloco destrutível
+
+    loadn r2, #8
+    cmp r1, r2
+    jeq ExplodirPos_Destruir    ; Explosao de bloco destrutível
+
+    loadn r2, #9
+    cmp r1, r2
+    jeq ExplodirPos_Destruir    ; Explosao de bloco destrutível
+
+    loadn r2, #10
+    cmp r1, r2
+    jeq ExplodirPos_Destruir    ; Explosao de bloco destrutível
+
     jmp ExplodirPos_Skip
 
     ExplodirPos_LuckBox:       ; Explosao de luck box
@@ -1609,7 +1691,7 @@ ExplodirPos:
             call CalculaPosTela0
             loadn r5, #tela0Linha0   ; r5 = addr(tela0Linha0)
             add r5, r5, r0          ; r5 = addr(tela0Linha0) + posTela; posTela = pos + pos//40
-            storei r5, r3           ; tela0[posTela] = char luck box -- Salvar o luck box em tela8
+            storei r5, r3           ; tela0[posTela] = char luck box -- Salvar o luck box em tela0
 
             pop r5
             pop r4
@@ -1806,6 +1888,31 @@ ApagaBloco:
     
     loadn r1, #' '
     outchar r1, r0          ; Apaga a posicao no display
+    
+    call CalculaPosTela0    ; r0 = pos + pos//40
+    loadn r1, #tela0Linha0  ; r1 = addr(tela0Linha0)
+    add r0, r0, r1          ; r0 = addr(tela0Linha0) + pos + pos//40
+
+    loadn r1, #' '
+    storei r0, r1           ; tela0[pos + pos//40] = ' ' -- Apaga a posicao em tela0
+
+    pop r1
+    pop r0
+    rts
+
+;----------------------------------
+
+
+;********************************************************
+;                   ApagaBuffer
+; Procedimento que, dado uma posicao, apaga o bloco so na 
+; posicao correspondente em tela0
+; 
+; ARGS  : r0 = posicao a ser apagada
+;********************************************************
+ApagaBuffer:
+    push r0
+    push r1
     
     call CalculaPosTela0    ; r0 = pos + pos//40
     loadn r1, #tela0Linha0  ; r1 = addr(tela0Linha0)
