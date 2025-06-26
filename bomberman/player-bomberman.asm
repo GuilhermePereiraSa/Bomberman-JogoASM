@@ -1,6 +1,39 @@
 ; Tela 
 ; carrega tela de menu
 
+IncRand: var #1			; Incremento para circular na Tabela de nr. Randomicos
+Rand : var #30			; Tabela de nr. Randomicos entre 7 - 10
+    static Rand + #0, #9
+    static Rand + #1, #7
+    static Rand + #2, #10
+    static Rand + #3, #8
+    static Rand + #4, #7
+    static Rand + #5, #10
+    static Rand + #6, #8
+    static Rand + #7, #9
+    static Rand + #8, #7
+    static Rand + #9, #10
+    static Rand + #10, #8
+    static Rand + #11, #7
+    static Rand + #12, #9
+    static Rand + #13, #10
+    static Rand + #14, #8
+    static Rand + #15, #7
+    static Rand + #16, #10
+    static Rand + #17, #9
+    static Rand + #18, #8
+    static Rand + #19, #7
+    static Rand + #20, #10
+    static Rand + #21, #8
+    static Rand + #22, #9
+    static Rand + #23, #7
+    static Rand + #24, #10
+    static Rand + #25, #8
+    static Rand + #26, #7
+    static Rand + #27, #9
+    static Rand + #28, #10
+    static Rand + #29, #8
+
 jmp MostrarMenu
 
 Msg1: string "DESEJA JOGAR NOVAMENTE? (s/n)" ; Mensagem para jogar novamente
@@ -1418,6 +1451,43 @@ ExplodirPos:
     loadn r2, #4
     cmp r1, r2
     jeq ExplodirPos_Skip        ; Explosao de parede
+
+    ExplodirPos_LuckBox:       ; Explosao de luck box
+        push r0
+        push r2
+        push r3
+        push r4
+        push r5
+
+        loadn r2,#Rand ; declara ponteiro para tabela rand na memoria
+        load r1, IncRand ; Pega Incremento da tabela Rand
+        add r2, r2, r1          ; Incrementa o rand para gerar um novo numero aleatorio
+        loadi R3, R2 		; busca nr. randomico da memoria em R3
+						    ; R3 = Rand(IncRand)
+        inc r1				; Incremento ++
+	    loadn r2, #30
+	    cmp r1, r2			; Compara com o Final da Tabela e re-estarta em 0
+	    jne Lucky_RecalculaPos_Skip
+		loadn r1, #0		; re-estarta a Tabela Rand em 0
+
+Lucky_RecalculaPos_Skip:
+    	store IncRand, r1	; Salva incremento ++
+        
+        loadn r4, #3072         ; Cor azul 
+        add r4, r4, r3          ; Aplica a cor em r2
+        outchar r4, r0          ; Imprimir o powerup na tela
+
+        call CalculaPosTela0
+        loadn r5, #tela0Linha0   ; r5 = addr(tela0Linha0)
+        add r5, r5, r0          ; r5 = addr(tela0Linha0) + posTela; posTela = pos + pos//40
+        storei r5, r3           ; tela0[posTela] = char luck box -- Salvar o luck box em tela8
+
+        pop r5
+        pop r4
+        pop r3
+        pop r2
+        pop r0
+        jmp ExplodirPos_Skip     ; Pular para o fim
 
     ExplodirPos_Destruir:       ; Apaga o bloco do cenario
         call ApagaBloco
