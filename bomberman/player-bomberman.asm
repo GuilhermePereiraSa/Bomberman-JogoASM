@@ -192,7 +192,7 @@ main:
 
         call TickBombas                 ; logica para fazer o delay das bombas
 
-        ; call CheckExplosao --> Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
+        call CheckExplosao              ; Verifica se algum player morre pela bomba; (verificar isso por ciclos menores)
 
 
         call Delay
@@ -1792,6 +1792,49 @@ ExplodirPos_HitBomba_Azul:
 
 
 ;********************************************************
+;                   CheckExplosao
+; Procedimento que verifica se algum jogador perdeu, e se
+; perdeu, termina o jogo
+;********************************************************
+CheckExplosao:
+    push r0
+    push r1
+    push r2
+    push r3
+
+    load r0, posAzul                   ; r0 = posicao do jogador azul
+    loadn r1, #tela8Linha0              ; r2 = addr(tela8) -> buffer das explosoes
+
+    call CalculaPosTela0                ; r0 = posicao do jogador azul referente ao buffer de explosao
+    add r1, r1, r0                      ; r1 = endereco da posicao referente ao jogador azul no buffer de explosao
+    loadi r2, r1                        ; r2 = valor do buffer de explosao na posicao do jogador azul
+
+    loadn r3, #32
+    cmp r2, r3
+    jne Sair
+
+    load r0, posRosa                   ; r0 = posicao do jogador rosa
+    loadn r1, #tela8Linha0              ; r2 = addr(tela8) -> buffer das explosoes
+
+    call CalculaPosTela0                ; r0 = posicao do jogador rosa referente ao buffer de explosao
+    add r1, r1, r0                      ; r1 = endereco da posicao referente ao jogador rosa no buffer de explosao
+    loadi r2, r1                        ; r2 = valor do buffer de explosao na posicao do jogador azul
+
+    loadn r3, #32
+    cmp r2, r3
+    jne Sair
+
+    CheckExplosao_Fim:
+        pop r3
+        pop r2
+        pop r1
+        pop r0
+        rts
+
+;----------------------------------
+
+
+;********************************************************
 ;           ExplodirPos_HitBomba_Rosa
 ; Procedimento que dada uma posicao, explode essa posicao
 ; e cuida dos resultados
@@ -1937,6 +1980,7 @@ Sair:
     ; Pode colocar mensagem de despedida, ou parar o programa
     loadn r0, #100
     loadn r1, #MsgFim
+    loadn r2, #0
     
     call ImprimeStr
 
