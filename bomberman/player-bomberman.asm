@@ -497,9 +497,60 @@ AtualizaAzul_Input:
         call DetectaColisao             ; testa se nao ha nenhuma colisao na posicao a ser usada
                                         ; Retorna resultado em r1
 
-        loadn r2,#0
+        loadn r2,#1
         cmp r1, r2
-        jne AtualizaAzul_Input_Skip     ; Se existir colisao, nao atualizar a posicao
+        jeq AtualizaAzul_Input_Skip     ; Colisao com bomba, nao atualizar a posicao
+
+        loadn r2,#2
+        cmp r1, r2
+        jeq AtualizaAzul_Input_Skip     ; Colisao com luck box, nao atualizar a posicao
+
+        loadn r2,#3
+        cmp r1, r2
+        jeq AtualizaAzul_Input_Skip     ; Colisao com bloco, nao atualizar a posicao
+
+        loadn r2,#4
+        cmp r1, r2
+        jeq AtualizaAzul_Input_Skip     ; Colisao com parede, nao atualizar a posicao
+
+        push r0
+        push r1
+
+        mov r2, r1
+        loadn r0, #rangeBombaAzul       ; r0 = addr(rangeBombaAzul)
+        
+        loadn r1, #1                
+        loadn r3, #7
+        cmp r2, r3
+        ceq BombaRangeP     ; Colisao com bombrange+
+
+        loadn r1, #65535                ; r1 = -1 (65536 - 1)
+        loadn r3, #8
+        cmp r2, r3
+        ceq BombaRangeP     ; Colisao com bombrange-
+
+        pop r1
+        pop r0
+
+
+        push r0
+        push r1
+
+        mov r2, r1
+        loadn r0, #timeBombaAzul       ; r0 = addr(rangeBombaAzul)
+        
+        loadn r1, #65486                ; r1 = -50 (65536 - 50)
+        loadn r3, #9
+        cmp r2, r3
+        ceq BombaSpeedP     ; Colisao com BombaSpeedP+
+
+        loadn r1, #50
+        loadn r3, #10
+        cmp r2, r3
+        ceq BombaSpeedP     ; Colisao com BombaSpeedP-
+
+        pop r1
+        pop r0
         
         ; Caso contrario, atualizar a posicao
         store posAzul, r0
@@ -794,6 +845,55 @@ AtualizaRosa_Desenha:
 
 
 ;********************************************************
+;                   BombaRangeP
+; Procedimento que aumenta/dimniui o alcance da bomba do jogador
+;
+; ARGS  : r0 = endereco da variavel de alcance do jogador
+;           (pode ser rangeBombaAzul ou rangeBombaRosa)
+;         r1 = incremento do alcance
+;********************************************************
+BombaRangeP:
+    push r0
+    push r1
+    push r2
+
+    loadi r2, r0            ; Carrega o alcance da bomba do jogador Azul
+    add r2, r2, r1          ; Incrementa o alcance da bomba
+    storei r0, r2           ; Armazena o novo alcance na variavel do jogador
+
+    pop r2
+    pop r1 
+    pop r0
+    rts
+
+;----------------------------------
+
+
+;********************************************************
+;                   BombaSpeedP
+; Procedimento que diminui/aumenta o delay da bomba do jogador
+;
+; ARGS  : r0 = endereco da variavel de alcance do jogador
+;           (pode ser timeBombaAzul ou timeBombaRosa)
+;         r1 = incremento do alcance
+;********************************************************
+BombaSpeedP:
+    push r0
+    push r1
+    push r2
+
+    loadi r2, r0            ; Carrega o alcance da bomba do jogador Azul
+    add r2, r2, r1          ; Incrementa o alcance da bomba
+    storei r0, r2           ; Armazena o novo alcance na variavel do jogador
+
+    pop r2
+    pop r1 
+    pop r0
+    rts
+
+;----------------------------------
+
+;********************************************************
 ;                   DetectaColisao
 ; Procedimento que detecta se algum bloco (objeto 
 ; colidivel) existe na posicao guardada em r0
@@ -806,6 +906,10 @@ AtualizaRosa_Desenha:
 ;           2: com colisao (luck box)
 ;           3: com colisao (bloco destrutivel)
 ;           4: com colisao (parede)
+;           7: com colisao (bombrange+)
+;           8: com colisao (bombrange-)
+;           9: com colisao (bombspeed+)
+;           10: com colisao (bombspeed-)
 ;
 ; 
 ; IDEIAS -- Guilherme
@@ -865,6 +969,22 @@ DetectaColisao:
     cmp r3,r2
     jeq DetectaColisao_Parede       ; Colisao com o bloco 'K' (parede5)
 
+    loadn r2,#7
+    cmp r3,r2
+    jeq DetectaColisao_Powerup     ; Colisao com o bloco '7' (bombrange+)
+    
+    loadn r2,#8
+    cmp r3,r2
+    jeq DetectaColisao_Powerup       ; Colisao com o bloco '8' (bombrange-)
+
+    loadn r2,#9
+    cmp r3,r2
+    jeq DetectaColisao_Powerup       ; Colisao com o bloco '9' (bombspeed+)
+
+    loadn r2,#10
+    cmp r3,r2
+    jeq DetectaColisao_Powerup       ; Colisao com o bloco '10' (bombspeed-)
+
     jmp DetectaColisao_Fim
 
     DetectaColisao_Parede:
@@ -881,6 +1001,11 @@ DetectaColisao:
 
     DetectaColisao_Bomba:
         loadn r1, #1
+        jmp DetectaColisao_Fim
+
+    DetectaColisao_Powerup:
+        mov r1, r3 ;
+        breakp
         jmp DetectaColisao_Fim
     
     DetectaColisao_Fim:
@@ -1440,9 +1565,9 @@ ExplodirPos:
     cmp r1, r2
     jeq ExplodirPos_HitBomba    ; Explosao de bomba (explodir a outra bomba)
 
-;     loadn r2, #2
-;     cmp r1, r2
-;     jeq ExplodirPos_LuckBox     ; Explosao de luck box (gerar item caso der sorte)
+    loadn r2, #2
+    cmp r1, r2
+    jeq ExplodirPos_LuckBox     ; Explosao de luck box (gerar item caso der sorte)
 
     loadn r2, #3
     cmp r1, r2
@@ -1451,6 +1576,9 @@ ExplodirPos:
     loadn r2, #4
     cmp r1, r2
     jeq ExplodirPos_Skip        ; Explosao de parede
+
+    breakp
+    jmp ExplodirPos_Skip
 
     ExplodirPos_LuckBox:       ; Explosao de luck box
         push r0
@@ -1465,29 +1593,30 @@ ExplodirPos:
         loadi R3, R2 		; busca nr. randomico da memoria em R3
 						    ; R3 = Rand(IncRand)
         inc r1				; Incremento ++
+
 	    loadn r2, #30
 	    cmp r1, r2			; Compara com o Final da Tabela e re-estarta em 0
-	    jne Lucky_RecalculaPos_Skip
+	    jne ExplodirPos_LuckBox_Skip
+
 		loadn r1, #0		; re-estarta a Tabela Rand em 0
+        ExplodirPos_LuckBox_Skip:
+            store IncRand, r1	; Salva incremento ++
+            
+            loadn r4, #3072         ; Cor azul 
+            add r4, r4, r3          ; Aplica a cor em r2
+            outchar r4, r0          ; Imprimir o powerup na tela
 
-Lucky_RecalculaPos_Skip:
-    	store IncRand, r1	; Salva incremento ++
-        
-        loadn r4, #3072         ; Cor azul 
-        add r4, r4, r3          ; Aplica a cor em r2
-        outchar r4, r0          ; Imprimir o powerup na tela
+            call CalculaPosTela0
+            loadn r5, #tela0Linha0   ; r5 = addr(tela0Linha0)
+            add r5, r5, r0          ; r5 = addr(tela0Linha0) + posTela; posTela = pos + pos//40
+            storei r5, r3           ; tela0[posTela] = char luck box -- Salvar o luck box em tela8
 
-        call CalculaPosTela0
-        loadn r5, #tela0Linha0   ; r5 = addr(tela0Linha0)
-        add r5, r5, r0          ; r5 = addr(tela0Linha0) + posTela; posTela = pos + pos//40
-        storei r5, r3           ; tela0[posTela] = char luck box -- Salvar o luck box em tela8
-
-        pop r5
-        pop r4
-        pop r3
-        pop r2
-        pop r0
-        jmp ExplodirPos_Skip     ; Pular para o fim
+            pop r5
+            pop r4
+            pop r3
+            pop r2
+            pop r0
+            jmp ExplodirPos_Skip     ; Pular para o fim
 
     ExplodirPos_Destruir:       ; Apaga o bloco do cenario
         call ApagaBloco
