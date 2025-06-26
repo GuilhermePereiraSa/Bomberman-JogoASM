@@ -208,22 +208,22 @@ main:
 ; Procedimento que imprime um novo cenario na tela e 
 ; salva os resultados em tela0.
 ; 
-; 0 branco                          0000 0000
-; 256 marrom                        0001 0000
-; 512 verde                         0010 0000
-; 768 oliva                         0011 0000
-; 1024 azul marinho                 0100 0000
-; 1280 roxo                         0101 0000
-; 1536 teal                         0110 0000
-; 1792 prata                        0111 0000
-; 2048 cinza                        1000 0000
-; 2304 vermelho                     1001 0000
-; 2560 lima                         1010 0000
-; 2816 amarelo                      1011 0000
-; 3072 azul                         1100 0000
-; 3328 rosa                         1101 0000
-; 3584 aqua                         1110 0000
-; 3840 branco                       1111 0000
+; 0 branco							0000 0000
+; 256 marrom						0001 0000
+; 512 verde							0010 0000
+; 768 oliva							0011 0000
+; 1024 azul marinho					0100 0000
+; 1280 roxo							0101 0000
+; 1536 teal							0110 0000
+; 1792 prata						0111 0000
+; 2048 cinza						1000 0000
+; 2304 vermelho						1001 0000
+; 2560 lima							1010 0000
+; 2816 amarelo						1011 0000
+; 3072 azul							1100 0000
+; 3328 rosa							1101 0000
+; 3584 aqua							1110 0000
+; 3840 branco						1111 0000
 ; 
 ; carregar cenarios com as especificas cores;
 ;********************************************************
@@ -1126,60 +1126,6 @@ ExplodirBomba:
 ;----------------------------------
 
 
-; USARIA ESSE PROCEDIMENTO PARA DESCONTAR O USADOBOMBAAZUL DE UMA BOMBA EXPLODIDA POR OUTRA BOMBA
-; ;********************************************************
-; ;           ExplodirBomba_ProcurarAzul
-; ; Sub-procedimento que dado a posicao de uma bomba, 
-; ; procura a referencia no vetor bombasAzul
-; ; 
-; ; ARGS  : r1 = posicao da bomba
-; ; 
-; ; SAIDA : r0 = indice da bomba em bombasAzul
-; ;           Caso falhe, retorna -1
-; ;********************************************************
-; ExplodirBomba_ProcurarAzul:
-;     push r1
-;     push r2
-;     push r3
-;     push r4
-;     push r5
-; 
-;     loadn r0, #65535
-; 
-;     loadn r2, #0
-;     load r3, usadoBombaAzul                     ; Limite para o loop
-;     loadn r4, #bombasAzul                       ; r4 = addr(bombasAzul)
-;     loadn r5, #1
-;     add r4, r4, r5                              ; r4 = addr(bombasAzul) + 1 -- Pego o endereco da posicao da primeira bomba na lista
-; 
-;     ExplodirBomba_ProcurarAzul_Loop:
-;         cmp r2, r3
-;         jeg ExplodirBomba_ProcurarAzul_Fim      ; Fim do loop
-;         
-;         loadi r5, r4                            ; r5 = bombasAzul[4 * r2 + 1] -- Pego a posicao da r2-ezima bomba na lista
-;         cmp r5, r1
-;         jeq ExplodirBomba_ProcurarAzul_Sucesso
-; 
-;         inc r2
-;         loadn r5, #4
-;         add r4, r4, r5
-; 
-;         jmp ExplodirBomba_ProcurarAzul_Loop
-; 
-;     ExplodirBomba_ProcurarAzul_Sucesso:
-;         mov r0, r2
-; 
-;     ExplodirBomba_ProcurarAzul_Fim:
-;         pop r5
-;         pop r4
-;         pop r3
-;         pop r2
-;         pop r1
-;         rts
-; 
-; ;----------------------------------
-
-
 ;********************************************************
 ;                   CopiarBombaLista
 ; Procedimento que copia os dados de um item da lista 
@@ -1490,9 +1436,9 @@ ExplodirPos:
     cmp r1, r2
     jeq ExplodirPos_Normal      ; Explosao de espaco vazio
 
-;     loadn r2, #1
-;     cmp r1, r2
-;     jeq ExplodirPos_HitBomba    ; Explosao de bomba (explodir a outra bomba)
+    loadn r2, #1
+    cmp r1, r2
+    jeq ExplodirPos_HitBomba    ; Explosao de bomba (explodir a outra bomba)
 
 ;     loadn r2, #2
 ;     cmp r1, r2
@@ -1543,8 +1489,6 @@ Lucky_RecalculaPos_Skip:
         pop r0
         jmp ExplodirPos_Skip     ; Pular para o fim
 
-
-
     ExplodirPos_Destruir:       ; Apaga o bloco do cenario
         call ApagaBloco
 
@@ -1555,9 +1499,14 @@ Lucky_RecalculaPos_Skip:
         outchar r2, r0          ; Imprimir a explosao na tela
 
         call CalculaPosTela0
-        loadn r3, #tela8Linha0   ; r3 = addr(tela8Linha0)
+        loadn r3, #tela8Linha0  ; r3 = addr(tela8Linha0)
         add r3, r3, r0          ; r3 = addr(tela8Linha0) + posTela; posTela = pos + pos//40
         storei r3, r2           ; tela8[posTela] = char explosao -- Salvar a explosao em tela8
+        jmp ExplodirPos_Skip
+
+    ExplodirPos_HitBomba:
+        call ExplodirPos_HitBomba_Azul
+        call ExplodirPos_HitBomba_Rosa
 
     ExplodirPos_Skip:
         pop r3
@@ -1565,8 +1514,133 @@ Lucky_RecalculaPos_Skip:
         pop r0
         rts
 
+
+;********************************************************
+;           ExplodirPos_HitBomba_Azul
+; Procedimento que dada uma posicao, explode essa posicao
+; e cuida dos resultados
+; 
+; Em especial, cada bloco vai ter uma resposta diferente
+; 
+; ARGS  : r0 = posicao a ser explodida
+;********************************************************
+ExplodirPos_HitBomba_Azul:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+    push r5
+    
+    loadn r1, #bombasAzul
+    inc r1                      ; r1 = addr(bombasAzul)+1 -> endereco da posicao da primeira bomba
+    loadn r2, #0
+    load r3, maxBombaAzul
+
+    ExplodirPos_HitBomba_Azul_Loop:
+        ; EXPLODIR A BOMBA DE FATO!!!!
+        push r0
+        push r1
+        push r2
+
+        loadi r4, r1                ; r4 = bombasAzul[r2].pos
+        mov r5, r0                  ; r5 = posicao a ser explodida (r0)
+
+        mov r0, r2                  ; r0 = indice da bomba
+        loadn r1, #usadoBombaAzul   ; r1 = addr(usadoBombaAzul)
+        loadn r2, #bombasAzul       ; r2 = addr(bombasAzul)
+
+        cmp r4, r5
+        ceq ExplodirBomba
+
+        pop r2
+        pop r1
+        pop r0
+
+        cmp r4, r5
+        jeq ExplodirPos_HitBomba_Azul_Fim
+        
+        inc r2                      ; r2 = r2 + 1
+        loadn r4, #4
+        add r1, r1, r4              ; r1 = r1 + 4
+        cmp r2, r3
+
+        jle ExplodirPos_HitBomba_Azul_Loop
+
+    ExplodirPos_HitBomba_Azul_Fim:
+
+    pop r5
+    pop r4
+    pop r3
+    pop r2
+    pop r1
+    pop r0
+    rts
+
 ;----------------------------------
 
+
+;********************************************************
+;           ExplodirPos_HitBomba_Rosa
+; Procedimento que dada uma posicao, explode essa posicao
+; e cuida dos resultados
+; 
+; Em especial, cada bloco vai ter uma resposta diferente
+; 
+; ARGS  : r0 = posicao a ser explodida
+;********************************************************
+ExplodirPos_HitBomba_Rosa:
+    push r0
+    push r1
+    push r2
+    push r3
+    push r4
+    push r5
+    
+    loadn r1, #bombasRosa
+    inc r1                      ; r1 = addr(bombasRosa)+1 -> endereco da posicao da primeira bomba
+    loadn r2, #0
+    load r3, maxBombaRosa
+
+    ExplodirPos_HitBomba_Rosa_Loop:
+        ; EXPLODIR A BOMBA DE FATO!!!!
+        push r0
+        push r1
+        push r2
+
+        loadi r4, r1                ; r4 = bombasRosa[r2].pos
+        mov r5, r0                  ; r5 = posicao a ser explodida (r0)
+
+        mov r0, r2                  ; r0 = indice da bomba
+        loadn r1, #usadoBombaRosa   ; r1 = addr(usadoBombaRosa)
+        loadn r2, #bombasRosa       ; r2 = addr(bombasRosa)
+
+        cmp r4, r5
+        ceq ExplodirBomba
+
+        pop r2
+        pop r1
+        pop r0
+
+        cmp r4, r5
+        jeq ExplodirPos_HitBomba_Rosa_Fim
+        
+        inc r2                      ; r2 = r2 + 1
+        loadn r4, #4
+        add r1, r1, r4              ; r1 = r1 + 4
+        cmp r2, r3
+
+        jle ExplodirPos_HitBomba_Rosa_Loop
+
+    ExplodirPos_HitBomba_Rosa_Fim:
+
+    pop r5
+    pop r4
+    pop r3
+    pop r2
+    pop r1
+    pop r0
+    rts
 
 ;********************************************************
 ;               CalculaPosTela0
