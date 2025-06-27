@@ -519,6 +519,7 @@ AtualizaAzul_Input:
         cmp r1, r2
         jeq AtualizaAzul_Input_Skip     ; Colisao com parede, nao atualizar a posicao
 
+
         push r0
         push r1
 
@@ -530,14 +531,7 @@ AtualizaAzul_Input:
         loadn r3, #7
         cmp r2, r3
         ceq BombaRangeP     ; Colisao com bombrange+
-        mov r0, r4
-        cmp r2, r3
-        ceq ApagaBuffer
 
-        loadn r1, #65535                ; r1 = -1 (65536 - 1)
-        loadn r3, #8
-        cmp r2, r3
-        ceq BombaRangeP     ; Colisao com bombrange-
         mov r0, r4
         cmp r2, r3
         ceq ApagaBuffer
@@ -551,20 +545,54 @@ AtualizaAzul_Input:
 
         mov r4, r0
         mov r2, r1
-        loadn r0, #timeBombaAzul       ; r0 = addr(rangeBombaAzul)
+        loadn r0, #rangeBombaAzul       ; r0 = addr(rangeBombaAzul)
         
-        loadn r1, #65486                ; r1 = -50 (65536 - 50)
-        loadn r3, #9
+        loadn r1, #65535                ; r1 = -1 (65536 - 1)
+        loadn r3, #8
         cmp r2, r3
-        ceq BombaSpeedP     ; Colisao com BombaSpeedP+
+        ceq BombaRangeP     ; Colisao com bombrange-
+
         mov r0, r4
         cmp r2, r3
         ceq ApagaBuffer
 
+        pop r1
+        pop r0
+
+
+        push r0
+        push r1
+
+        mov r4, r0                      ; r4 = posicao atual do jogador azul
+        mov r2, r1                      ; r2 = saida da colisao
+        loadn r0, #timeBombaAzul        ; r0 = addr(rangeBombaAzul)
+        
+        loadn r1, #65486                ; r1 = -50 (65536 - 50)
+        loadn r3, #9
+        cmp r2, r3
+        ceq BombaSpeedP                 ; Colisao com BombaSpeedP+
+
+        mov r0, r4                      ; r0 = Posicao atual do jogador azul
+        cmp r2, r3
+        ceq ApagaBuffer
+
+        pop r1
+        pop r0
+
+
+        push r0
+        push r1
+        
+        mov r4, r0                      ; r4 = posicao atual do jogador azul
+        mov r2, r1                      ; r2 = saida da colisao
+        loadn r0, #timeBombaAzul        ; r0 = addr(rangeBombaAzul)
+        
+
         loadn r1, #50
         loadn r3, #10
         cmp r2, r3
-        ceq BombaSpeedP     ; Colisao com BombaSpeedP
+        ceq BombaSpeedP                 ; Colisao com BombaSpeedP
+
         mov r0, r4
         cmp r2, r3
         ceq ApagaBuffer
@@ -928,6 +956,7 @@ BombaRangeP:
     push r1
     push r2
 
+    breakp
     loadi r2, r0            ; Carrega o alcance da bomba do jogador Azul
     add r2, r2, r1          ; Incrementa o alcance da bomba
     storei r0, r2           ; Armazena o novo alcance na variavel do jogador
@@ -953,6 +982,7 @@ BombaSpeedP:
     push r1
     push r2
 
+    breakp
     loadi r2, r0            ; Carrega o alcance da bomba do jogador Azul
     add r2, r2, r1          ; Incrementa o alcance da bomba
     storei r0, r2           ; Armazena o novo alcance na variavel do jogador
