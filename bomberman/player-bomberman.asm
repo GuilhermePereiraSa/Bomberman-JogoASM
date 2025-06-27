@@ -96,6 +96,7 @@ Letra: var #1		; Contem a letra que foi digitada -- com delay
 ;********************************************************
 MostrarMenu:
     call ApagaTela
+    call ApagaBufferExplosao
 
     ; call printefeitoScreen -- Procedimento que ainda nao existe
 
@@ -1993,7 +1994,12 @@ Sair:
     loadn r0, #100
     loadn r1, #MsgFim
     loadn r2, #0
-    
+    call ImprimeStr
+
+    ; Imprime: DESEJA JOGAR NOVAMENTE?
+    loadn r0, #325
+    loadn r1, #Msg1
+    loadn r2, #0
     call ImprimeStr
 
     pop r0
@@ -2027,6 +2033,15 @@ Sair:
 
 
     Sair_Fim:
+        call DigLetra
+        load r0, Letra
+        loadn r1, #'s'
+        cmp r0, r1
+        jeq MostrarMenu
+
+        loadn r1, #'n'
+        cmp r0, r1
+        jne Sair_Fim
 
     halt
 
@@ -2049,6 +2064,51 @@ ApagaTela:
 		outchar r1, r0
 		jnz ApagaTela_Loop
  
+	pop r1
+	pop r0
+	rts	
+	
+;------------------------	
+
+
+;********************************************************
+;                   RESET BUFFERS
+; Procedimento que apaga o buffer de explosoes.
+;********************************************************
+ApagaBufferExplosao:
+	push r0
+	push r1
+    push r2
+    push r3
+    push r4
+	
+	loadn r0, #1200		; apaga as 1200 posicoes da Tela
+	loadn r1, #' '		; com "espaco"
+    loadn r2, #tela0Linha0
+    loadn r3, #tela8Linha0
+	
+	ApagaBufferExplosao_Loop:	;;label for(r0=1200;r3>0;r3--)
+		dec r0
+		outchar r1, r0
+
+        push r0
+
+        call CalculaPosTela0
+        add r4, r0, r2          ; r0 = tela0[r0]
+        storei r4, r1           ; tela0[r0] = ' '
+
+        add r4, r0, r3          ; r0 = tela8[r0]
+        storei r4, r1           ; tela8[r0] = ' '
+
+        pop r0
+
+        loadn r4, #0
+        cmp r0, r4
+		jne ApagaBufferExplosao_Loop
+ 
+    pop r4
+    pop r3
+    pop r2
 	pop r1
 	pop r0
 	rts	
