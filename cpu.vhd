@@ -527,7 +527,6 @@ begin
 				OP(6)<=IR(0);
 
 				selM6 := sULA;
-				-- LoadReg(RX) := '1'; --> errado??
 				LoadFR := '1';	
 				
 
@@ -613,9 +612,8 @@ begin
 				M1 <= SP;
 				RW <= '1';
 				IF(IR(6) = '0') THEN M3 := REG(rx);
-				ELSE M3 := auxFR; END IF;
+				ELSE M3 := FR; END IF;
 
-				-- M3 := REG(RX);
 				M5 <= M3;
 				DecSP := '1';
 
@@ -699,7 +697,6 @@ begin
 				Rw<= '0';
 				SelM2 := sMEM;
 				LoadReg(RX) := '1';
-				-- state := fetch;
 				state := fetch;
 			END IF;
 							
