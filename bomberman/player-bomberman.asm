@@ -956,7 +956,6 @@ BombaRangeP:
     push r1
     push r2
 
-    breakp
     loadi r2, r0            ; Carrega o alcance da bomba do jogador Azul
     add r2, r2, r1          ; Incrementa o alcance da bomba
     storei r0, r2           ; Armazena o novo alcance na variavel do jogador
@@ -982,7 +981,6 @@ BombaSpeedP:
     push r1
     push r2
 
-    breakp
     loadi r2, r0            ; Carrega o alcance da bomba do jogador Azul
     add r2, r2, r1          ; Incrementa o alcance da bomba
     storei r0, r2           ; Armazena o novo alcance na variavel do jogador
