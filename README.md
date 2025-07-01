@@ -2,6 +2,8 @@
 
 Uma versão do clássico **Bomberman**, desenvolvida em **Assembly**!  
 Este projeto foi criado com fins educacionais, explorando conceitos de baixo nível e manipulação direta de hardware.
+**[Assista um vídeo do projeto funcionando aqui](https://youtu.be/2DaRx1OaSo4)**
+
 
 ---
 
